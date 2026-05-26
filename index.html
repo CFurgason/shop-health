@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop Health Dashboard</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #687386;
+      --line: #dfe4ea;
+      --soft: #eef2f6;
+      --good: #157f55;
+      --warn: #b26a00;
+      --bad: #b42318;
+      --accent: #2457a6;
+      --accent-soft: #e7eefb;
+      --shadow: 0 8px 24px rgba(23, 32, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      min-height: 100vh;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .header-inner {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 18px 0;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+
+    .source-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      max-width: 760px;
+    }
+
+    .input,
+    .select {
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+      color: var(--ink);
+      padding: 0 11px;
+      min-width: 0;
+    }
+
+    .btn {
+      height: 38px;
+      border: 1px solid #1f4f97;
+      border-radius: 7px;
+      background: var(--accent);
+      color: #ffffff;
+      padding: 0 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn.secondary {
+      background: #ffffff;
+      color: var(--accent);
+      border-color: var(--line);
+    }
+
+    main {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 18px 0 32px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(220px, 1.2fr) repeat(4, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: end;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .field .input,
+    .field .select {
+      width: 100%;
+    }
+
+    .view-tabs {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      margin: 0 0 14px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .tab-btn {
+      height: 34px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      padding: 0 12px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--ink);
+      box-shadow: 0 1px 4px rgba(23, 32, 42, 0.12);
+    }
+
+    .view[hidden] {
+      display: none;
+    }
+
+    .front-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+
+    .front-head h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .front-head p {
+      margin: 3px 0 0;
+      color: var(--muted);
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .score-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      min-height: 174px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .score-card-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .score-card h3 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .score-card .location {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      min-height: 18px;
+    }
+
+    .score-value {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      border: 7px solid var(--accent-soft);
+      color: var(--accent);
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .score-value.good {
+      color: var(--good);
+      border-color: #bfe7d2;
+    }
+
+    .score-value.warn {
+      color: var(--warn);
+      border-color: #ffdca3;
+    }
+
+    .score-value.bad {
+      color: var(--bad);
+      border-color: #fac5bf;
+    }
+
+    .score-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .mini-metric {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 8px;
+      background: #fbfcfe;
+    }
+
+    .mini-metric strong,
+    .mini-metric span {
+      display: block;
+    }
+
+    .mini-metric strong {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .mini-metric span {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .score-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      min-height: 108px;
+    }
+
+    .kpi .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .kpi .value {
+      margin-top: 10px;
+      font-size: clamp(24px, 2.6vw, 36px);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .kpi .note {
+      color: var(--muted);
+      margin-top: 9px;
+      min-height: 20px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: calc(100vh - 324px);
+      min-height: 320px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f9fafb;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th[data-sort]::after {
+      content: "sort";
+      margin-left: 6px;
+      color: #97a1af;
+      font-size: 10px;
+      text-transform: none;
+    }
+
+    tr:hover td {
+      background: #fbfcfe;
+    }
+
+    .rank {
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .pill.good {
+      background: #e8f6ef;
+      color: var(--good);
+      border-color: #bfe7d2;
+    }
+
+    .pill.warn {
+      background: #fff3dd;
+      color: var(--warn);
+      border-color: #ffdca3;
+    }
+
+    .pill.bad {
+      background: #fdecea;
+      color: var(--bad);
+      border-color: #fac5bf;
+    }
+
+    .bar {
+      height: 8px;
+      width: 110px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .side {
+      display: grid;
+      gap: 14px;
+    }
+
+    .list {
+      padding: 6px 14px 14px;
+    }
+
+    .list-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .list-row:last-child {
+      border-bottom: 0;
+    }
+
+    .list-row strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .list-row small {
+      color: var(--muted);
+    }
+
+    .empty {
+      padding: 44px 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .help {
+      padding: 14px;
+      color: var(--muted);
+    }
+
+    .help code {
+      color: var(--ink);
+      background: var(--soft);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 1120px) {
+      .header-inner,
+      .layout,
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .source-bar {
+        justify-content: stretch;
+      }
+
+      .source-bar .input,
+      .source-bar .btn {
+        flex: 1 1 180px;
+      }
+
+      .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .header-inner,
+      main {
+        width: min(100% - 20px, 1440px);
+      }
+
+      .front-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .score-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="header-inner">
+        <div>
+          <h1>Shop Health Dashboard</h1>
+          <p class="subtitle">Car count, shop sentiment, duplicate-aware appointments, and shop ranking.</p>
+        </div>
+        <div class="source-bar" aria-label="Data source controls">
+          <button id="refreshSheet" class="btn" type="button">Refresh Sheet</button>
+          <button id="loadSample" class="btn secondary" type="button">Sample Data</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="controls" aria-label="Dashboard filters">
+        <div class="field">
+          <label for="search">Search Shops</label>
+          <input id="search" class="input" type="search" placeholder="Shop name, city, state">
+        </div>
+        <div class="field">
+          <label for="sentimentFilter">Sentiment</label>
+          <select id="sentimentFilter" class="select">
+            <option value="all">All sentiment</option>
+            <option value="positive">Positive</option>
+            <option value="neutral">Neutral</option>
+            <option value="negative">Negative</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="minCalls">Minimum Car Count</label>
+          <input id="minCalls" class="input" type="number" min="0" step="1" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="sortBy">Sort</label>
+          <select id="sortBy" class="select">
+            <option value="rank">Rank</option>
+            <option value="shop">Shop A-Z</option>
+            <option value="carCount">Car Count</option>
+            <option value="sentimentScore">Sentiment Score</option>
+            <option value="appointments">Appointments</option>
+            <option value="healthScore">Health Score</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="sortDir">Direction</label>
+          <select id="sortDir" class="select">
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+      </section>
+
+      <nav class="view-tabs" aria-label="Dashboard views">
+        <button id="frontTab" class="tab-btn active" type="button" data-view="front">Shop Scores</button>
+        <button id="detailTab" class="tab-btn" type="button" data-view="detail">Details</button>
+      </nav>
+
+      <section id="frontView" class="view">
+        <div class="front-head">
+          <div>
+            <h2>Shop Scores</h2>
+            <p>Ranked by shop score using sentiment, car count, and unique appointments.</p>
+          </div>
+          <div id="frontStatus" class="status">Waiting for Google Sheet setup.</div>
+        </div>
+        <div id="scoreCards" class="score-grid">
+          <div class="panel">
+            <div class="empty">Add your Google Sheet URL in the dashboard settings, then refresh the page.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="detailView" class="view" hidden>
+        <section class="kpi-grid" aria-label="Key performance indicators">
+          <article class="kpi">
+            <div class="label">Shops</div>
+            <div id="kpiShops" class="value">0</div>
+            <div class="note">visible after filters</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Car Count</div>
+            <div id="kpiCars" class="value">0</div>
+            <div class="note">column O next-day call types</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Avg Sentiment</div>
+            <div id="kpiSentiment" class="value">0%</div>
+            <div class="note">column I shop sentiment</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Unique Appointments</div>
+            <div id="kpiAppointments" class="value">0</div>
+            <div id="appointmentNote" class="note">auto-detected when present</div>
+          </article>
+          <article class="kpi">
+            <div class="label">Needs Attention</div>
+            <div id="kpiAttention" class="value">0</div>
+            <div class="note">low sentiment or low activity</div>
+          </article>
+        </section>
+
+        <section class="layout">
+          <section class="panel">
+          <div class="panel-head">
+            <h2>Shop Ranking</h2>
+            <div id="status" class="status">Waiting for Google Sheet setup.</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th data-sort="rank">Rank</th>
+                  <th data-sort="shop">Shop</th>
+                  <th data-sort="carCount">Car Count</th>
+                  <th data-sort="sentimentScore">Sentiment</th>
+                  <th data-sort="appointments">Appointments</th>
+                  <th data-sort="healthScore">Health</th>
+                  <th>Top Call Type</th>
+                  <th>Risk</th>
+                </tr>
+              </thead>
+              <tbody id="shopRows">
+                <tr>
+                  <td colspan="8" class="empty">Add your Google Sheet URL in the dashboard settings, then refresh the page.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          </section>
+
+          <aside class="side">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Top Shops</h2>
+            </div>
+            <div id="topShops" class="list">
+              <div class="empty">No data loaded.</div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Watch List</h2>
+            </div>
+            <div id="watchList" class="list">
+              <div class="empty">No data loaded.</div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Column Detection</h2>
+            </div>
+            <div id="columnHelp" class="help">
+              Required: column <code>I</code> for sentiment and column <code>O</code> for next-day call type.
+            </div>
+          </section>
+          </aside>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const NEXT_DAY_TYPES = [
+      "Next Day Satisfaction",
+      "Returning Lost Vehicle",
+      "Welcome New Customer",
+      "Welcome New Vehicle"
+    ];
+
+    const DASHBOARD_SETTINGS = {
+      googleSheetUrl: "",
+      refreshMinutes: 15
+    };
+
+    const SAMPLE_CSV = `Shop,City,State,Advisor,Customer,Phone,Vehicle,VIN,Shop Sentiment,Appt Date,Appointment ID,Status,Repair Order,Notes,Call Type
+Austin North,Austin,TX,Jill Adams,River Lee,5125550101,Civic,2HGFA16587H000001,Positive,2026-05-27,A-1001,Scheduled,RO-8401,,Next Day Satisfaction
+Austin North,Austin,TX,Jill Adams,River Lee,5125550101,Civic,2HGFA16587H000001,Positive,2026-05-27,A-1001,Scheduled,RO-8401,,Next Day Satisfaction
+Austin North,Austin,TX,Mark Hill,Paula King,5125550102,Accord,1HGCM82633A000002,Neutral,2026-05-28,A-1002,Scheduled,RO-8402,,Welcome New Vehicle
+Dallas Central,Dallas,TX,Nia Cruz,Chris Ford,2145550122,RAV4,JTMBFREV3HJ000003,Negative,,,,RO-9102,,Returning Lost Vehicle
+Dallas Central,Dallas,TX,Nia Cruz,Mia Lane,2145550125,Camry,4T1BF1FK0HU000004,Neutral,2026-05-29,A-1021,Scheduled,RO-9108,,Next Day Satisfaction
+Denver West,Denver,CO,Noah Stone,Asha Patel,3035550110,F-150,1FTFW1EF1EFA00005,Positive,2026-05-27,A-1200,Scheduled,RO-3188,,Welcome New Customer
+Denver West,Denver,CO,Noah Stone,Evan Brooks,3035550111,Escape,1FMCU0G92HUA00006,Positive,,,,RO-3190,,Next Day Satisfaction
+Denver West,Denver,CO,Noah Stone,Lena Cruz,3035550112,Elantra,5NPD84LF3HH000007,Positive,2026-05-30,A-1202,Scheduled,RO-3194,,Next Day Satisfaction
+Phoenix East,Phoenix,AZ,Amy Voss,Neil Shah,6025550188,Altima,1N4AL3AP0HC000008,Negative,,,,RO-7780,,Welcome New Customer
+Phoenix East,Phoenix,AZ,Amy Voss,Omar Davis,6025550189,Outback,4S4BSANC5H3000009,Negative,,,,RO-7781,,Returning Lost Vehicle
+Portland South,Portland,OR,Luis Vega,Iris Moon,5035550120,CR-V,7FARW2H83JE000010,Neutral,2026-05-28,A-1401,Scheduled,RO-6501,,Next Day Satisfaction
+Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM000011,Positive,2026-05-31,A-1402,Scheduled,RO-6502,,Welcome New Vehicle`;
+
+    const state = {
+      rows: [],
+      shops: [],
+      filtered: [],
+      sortBy: "rank",
+      sortDir: "asc",
+      columns: {}
+    };
+
+    const els = {
+      refreshSheet: document.getElementById("refreshSheet"),
+      loadSample: document.getElementById("loadSample"),
+      search: document.getElementById("search"),
+      sentimentFilter: document.getElementById("sentimentFilter"),
+      minCalls: document.getElementById("minCalls"),
+      sortBy: document.getElementById("sortBy"),
+      sortDir: document.getElementById("sortDir"),
+      frontView: document.getElementById("frontView"),
+      detailView: document.getElementById("detailView"),
+      frontTab: document.getElementById("frontTab"),
+      detailTab: document.getElementById("detailTab"),
+      scoreCards: document.getElementById("scoreCards"),
+      frontStatus: document.getElementById("frontStatus"),
+      shopRows: document.getElementById("shopRows"),
+      status: document.getElementById("status"),
+      topShops: document.getElementById("topShops"),
+      watchList: document.getElementById("watchList"),
+      columnHelp: document.getElementById("columnHelp"),
+      kpiShops: document.getElementById("kpiShops"),
+      kpiCars: document.getElementById("kpiCars"),
+      kpiSentiment: document.getElementById("kpiSentiment"),
+      kpiAppointments: document.getElementById("kpiAppointments"),
+      kpiAttention: document.getElementById("kpiAttention"),
+      appointmentNote: document.getElementById("appointmentNote")
+    };
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let quoted = false;
+
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"' && quoted && next === '"') {
+          value += '"';
+          i += 1;
+        } else if (char === '"') {
+          quoted = !quoted;
+        } else if (char === "," && !quoted) {
+          row.push(value);
+          value = "";
+        } else if ((char === "\n" || char === "\r") && !quoted) {
+          if (char === "\r" && next === "\n") i += 1;
+          row.push(value);
+          if (row.some(cell => cell.trim() !== "")) rows.push(row);
+          row = [];
+          value = "";
+        } else {
+          value += char;
+        }
+      }
+
+      row.push(value);
+      if (row.some(cell => cell.trim() !== "")) rows.push(row);
+      return rows;
+    }
+
+    function normalize(value) {
+      return String(value || "").trim();
+    }
+
+    function key(value) {
+      return normalize(value).toLowerCase().replace(/[^a-z0-9]+/g, "");
+    }
+
+    function findColumn(headers, candidates, fallbackIndex) {
+      const normalized = headers.map(key);
+      for (const candidate of candidates) {
+        const index = normalized.indexOf(key(candidate));
+        if (index >= 0) return index;
+      }
+      for (const candidate of candidates) {
+        const needle = key(candidate);
+        const index = normalized.findIndex(header => header.includes(needle) || needle.includes(header));
+        if (index >= 0) return index;
+      }
+      return fallbackIndex;
+    }
+
+    function convertSheetUrl(url) {
+      const trimmed = url.trim();
+      if (!trimmed) return "";
+      if (trimmed.includes("output=csv") || trimmed.includes("tqx=out:csv")) return trimmed;
+
+      const gid = trimmed.match(/[?&]gid=(\d+)/)?.[1] || "0";
+      const id = trimmed.match(/\/spreadsheets\/d\/([^/]+)/)?.[1];
+      if (id) return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+      return trimmed;
+    }
+
+    function sentimentInfo(value) {
+      const text = normalize(value).toLowerCase();
+      if (!text) return { label: "Unknown", className: "warn", score: 50, bucket: "neutral" };
+      if (text.includes("positive") || text.includes("happy") || text.includes("good") || text.includes("great")) {
+        return { label: "Positive", className: "good", score: 100, bucket: "positive" };
+      }
+      if (text.includes("negative") || text.includes("unhappy") || text.includes("bad") || text.includes("poor")) {
+        return { label: "Negative", className: "bad", score: 0, bucket: "negative" };
+      }
+      if (text.includes("neutral") || text.includes("mixed")) {
+        return { label: "Neutral", className: "warn", score: 50, bucket: "neutral" };
+      }
+      const numeric = Number(text.replace("%", ""));
+      if (!Number.isNaN(numeric)) {
+        const score = text.includes("%") ? numeric : Math.max(0, Math.min(100, numeric));
+        if (score >= 70) return { label: `${Math.round(score)}%`, className: "good", score, bucket: "positive" };
+        if (score < 40) return { label: `${Math.round(score)}%`, className: "bad", score, bucket: "negative" };
+        return { label: `${Math.round(score)}%`, className: "warn", score, bucket: "neutral" };
+      }
+      return { label: normalize(value), className: "warn", score: 50, bucket: "neutral" };
+    }
+
+    function callTypeMatches(value) {
+      const text = normalize(value).toLowerCase();
+      return NEXT_DAY_TYPES.some(type => text === type.toLowerCase());
+    }
+
+    function detectColumns(headers) {
+      return {
+        shop: findColumn(headers, ["Shop", "Shop Name", "Location", "Store", "Center"], 0),
+        city: findColumn(headers, ["City", "Market"], -1),
+        state: findColumn(headers, ["State", "ST", "Region"], -1),
+        sentiment: findColumn(headers, ["Shop Sentiment", "Sentiment"], 8),
+        callType: findColumn(headers, ["Call Type", "Next Day Call", "Call Category", "Call Reason"], 14),
+        appointment: findColumn(headers, ["Appointment ID", "Appointment", "Appt ID", "Appointment Number", "Confirmation"], -1),
+        appointmentDate: findColumn(headers, ["Appointment Date", "Appt Date", "Scheduled Date", "Schedule Date"], -1),
+        customer: findColumn(headers, ["Customer", "Customer Name", "Client"], -1),
+        phone: findColumn(headers, ["Phone", "Phone Number", "Mobile"], -1),
+        email: findColumn(headers, ["Email", "Email Address"], -1),
+        vin: findColumn(headers, ["VIN", "Vehicle Identification Number"], -1),
+        vehicle: findColumn(headers, ["Vehicle", "Year Make Model", "Make Model"], -1),
+        ro: findColumn(headers, ["Repair Order", "RO", "RO Number", "Repair Order Number"], -1)
+      };
+    }
+
+    function get(row, index) {
+      return index >= 0 ? normalize(row[index]) : "";
+    }
+
+    function appointmentKey(row, columns) {
+      const appointment = get(row, columns.appointment);
+      if (appointment) return `appt:${appointment.toLowerCase()}`;
+
+      const date = get(row, columns.appointmentDate);
+      if (!date) return "";
+
+      const identity = [
+        get(row, columns.phone).replace(/\D/g, ""),
+        get(row, columns.email).toLowerCase(),
+        get(row, columns.vin).toLowerCase(),
+        get(row, columns.customer).toLowerCase(),
+        get(row, columns.vehicle).toLowerCase()
+      ].filter(Boolean).join("|");
+
+      return identity ? `fallback:${date.toLowerCase()}|${identity}` : "";
+    }
+
+    function processData(csvText, label) {
+      const raw = parseCsv(csvText);
+      if (raw.length < 2) throw new Error("The CSV needs a header row and at least one data row.");
+
+      const headers = raw[0].map(normalize);
+      const rows = raw.slice(1);
+      const columns = detectColumns(headers);
+      state.rows = rows;
+      state.columns = columns;
+
+      const grouped = new Map();
+      for (const row of rows) {
+        const shopName = get(row, columns.shop) || "Unknown Shop";
+        if (!grouped.has(shopName)) {
+          grouped.set(shopName, {
+            shop: shopName,
+            city: get(row, columns.city),
+            state: get(row, columns.state),
+            rowCount: 0,
+            carCount: 0,
+            sentimentTotal: 0,
+            sentimentRows: 0,
+            sentimentBuckets: { positive: 0, neutral: 0, negative: 0 },
+            callTypes: {},
+            appointmentKeys: new Set()
+          });
+        }
+
+        const shop = grouped.get(shopName);
+        shop.rowCount += 1;
+
+        const callType = get(row, columns.callType);
+        if (callTypeMatches(callType)) {
+          shop.carCount += 1;
+          shop.callTypes[callType] = (shop.callTypes[callType] || 0) + 1;
+        }
+
+        const sentiment = sentimentInfo(get(row, columns.sentiment));
+        shop.sentimentTotal += sentiment.score;
+        shop.sentimentRows += 1;
+        shop.sentimentBuckets[sentiment.bucket] += 1;
+
+        const apptKey = appointmentKey(row, columns);
+        if (apptKey) shop.appointmentKeys.add(apptKey);
+      }
+
+      const maxCars = Math.max(1, ...Array.from(grouped.values()).map(shop => shop.carCount));
+      const maxAppointments = Math.max(1, ...Array.from(grouped.values()).map(shop => shop.appointmentKeys.size));
+
+      state.shops = Array.from(grouped.values()).map(shop => {
+        const sentimentScore = shop.sentimentRows ? shop.sentimentTotal / shop.sentimentRows : 50;
+        const appointments = shop.appointmentKeys.size;
+        const activityScore = (shop.carCount / maxCars) * 45;
+        const appointmentScore = (appointments / maxAppointments) * 15;
+        const healthScore = Math.round((sentimentScore * 0.4) + activityScore + appointmentScore);
+        const topCallType = Object.entries(shop.callTypes).sort((a, b) => b[1] - a[1])[0]?.[0] || "None";
+        const risk = sentimentScore < 40 || shop.carCount === 0
+          ? "High"
+          : sentimentScore < 70 || shop.carCount < Math.max(2, maxCars * 0.25)
+            ? "Medium"
+            : "Low";
+
+        return {
+          ...shop,
+          appointments,
+          sentimentScore,
+          healthScore,
+          topCallType,
+          risk
+        };
+      }).sort((a, b) => b.healthScore - a.healthScore || b.carCount - a.carCount || a.shop.localeCompare(b.shop));
+
+      state.shops.forEach((shop, index) => {
+        shop.rank = index + 1;
+      });
+
+      const loadedStatus = `${state.rows.length.toLocaleString()} rows loaded from ${label}.`;
+      els.status.textContent = loadedStatus;
+      els.frontStatus.textContent = loadedStatus;
+      updateColumnHelp(headers, columns);
+      render();
+    }
+
+    function updateColumnHelp(headers, columns) {
+      const appointmentDetected = columns.appointment >= 0 || columns.appointmentDate >= 0;
+      els.appointmentNote.textContent = appointmentDetected
+        ? "deduped by appointment ID or customer/date"
+        : "no appointment column detected";
+
+      const parts = [
+        `Shop: ${headers[columns.shop] || "column A"}`,
+        `Sentiment: ${headers[columns.sentiment] || "column I"}`,
+        `Next-day calls: ${headers[columns.callType] || "column O"}`,
+        `Appointments: ${appointmentDetected ? (headers[columns.appointment] || headers[columns.appointmentDate]) : "not detected"}`
+      ];
+      els.columnHelp.innerHTML = parts.map(part => `<div>${escapeHtml(part)}</div>`).join("");
+    }
+
+    function applyFilters() {
+      const search = els.search.value.trim().toLowerCase();
+      const sentiment = els.sentimentFilter.value;
+      const minCalls = Number(els.minCalls.value || 0);
+
+      state.filtered = state.shops.filter(shop => {
+        const haystack = [shop.shop, shop.city, shop.state].join(" ").toLowerCase();
+        const sentimentBucket = sentimentInfo(shop.sentimentScore).bucket;
+        return (!search || haystack.includes(search))
+          && (sentiment === "all" || sentimentBucket === sentiment)
+          && shop.carCount >= minCalls;
+      });
+
+      const direction = state.sortDir === "asc" ? 1 : -1;
+      const sortBy = state.sortBy;
+      state.filtered.sort((a, b) => {
+        if (sortBy === "shop") return a.shop.localeCompare(b.shop) * direction;
+        return ((a[sortBy] || 0) - (b[sortBy] || 0)) * direction || a.shop.localeCompare(b.shop);
+      });
+    }
+
+    function render() {
+      state.sortBy = els.sortBy.value;
+      state.sortDir = els.sortDir.value;
+      applyFilters();
+      renderScoreCards();
+      renderKpis();
+      renderTable();
+      renderLists();
+    }
+
+    function renderScoreCards() {
+      if (!state.filtered.length) {
+        els.scoreCards.innerHTML = `<div class="panel"><div class="empty">No shops match the current filters.</div></div>`;
+        return;
+      }
+
+      els.scoreCards.innerHTML = state.filtered.map(shop => {
+        const sentiment = sentimentInfo(shop.sentimentScore);
+        const scoreClass = shop.healthScore >= 75 ? "good" : shop.healthScore >= 50 ? "warn" : "bad";
+        const riskClass = shop.risk === "Low" ? "good" : shop.risk === "Medium" ? "warn" : "bad";
+        return `<article class="score-card">
+          <div class="score-card-head">
+            <div>
+              <h3>${escapeHtml(shop.shop)}</h3>
+              <div class="location">${escapeHtml([shop.city, shop.state].filter(Boolean).join(", "))}</div>
+            </div>
+            <div class="score-value ${scoreClass}" aria-label="Shop score ${shop.healthScore}">${shop.healthScore}</div>
+          </div>
+          <div class="score-metrics">
+            <div class="mini-metric">
+              <strong>#${shop.rank}</strong>
+              <span>Rank</span>
+            </div>
+            <div class="mini-metric">
+              <strong>${shop.carCount.toLocaleString()}</strong>
+              <span>Cars</span>
+            </div>
+            <div class="mini-metric">
+              <strong>${Math.round(shop.sentimentScore)}%</strong>
+              <span>Sentiment</span>
+            </div>
+          </div>
+          <div class="score-foot">
+            <span class="pill ${sentiment.className}">${sentiment.label}</span>
+            <span class="pill ${riskClass}">${shop.risk} Risk</span>
+          </div>
+        </article>`;
+      }).join("");
+    }
+
+    function renderKpis() {
+      const shops = state.filtered;
+      const totalCars = shops.reduce((sum, shop) => sum + shop.carCount, 0);
+      const totalAppointments = shops.reduce((sum, shop) => sum + shop.appointments, 0);
+      const avgSentiment = shops.length
+        ? shops.reduce((sum, shop) => sum + shop.sentimentScore, 0) / shops.length
+        : 0;
+      const attention = shops.filter(shop => shop.risk !== "Low").length;
+
+      els.kpiShops.textContent = shops.length.toLocaleString();
+      els.kpiCars.textContent = totalCars.toLocaleString();
+      els.kpiSentiment.textContent = `${Math.round(avgSentiment)}%`;
+      els.kpiAppointments.textContent = totalAppointments.toLocaleString();
+      els.kpiAttention.textContent = attention.toLocaleString();
+    }
+
+    function renderTable() {
+      if (!state.filtered.length) {
+        els.shopRows.innerHTML = `<tr><td colspan="8" class="empty">No shops match the current filters.</td></tr>`;
+        return;
+      }
+
+      const maxHealth = Math.max(1, ...state.filtered.map(shop => shop.healthScore));
+      els.shopRows.innerHTML = state.filtered.map(shop => {
+        const sentiment = sentimentInfo(shop.sentimentScore);
+        const riskClass = shop.risk === "Low" ? "good" : shop.risk === "Medium" ? "warn" : "bad";
+        return `<tr>
+          <td class="rank">#${shop.rank}</td>
+          <td>
+            <strong>${escapeHtml(shop.shop)}</strong>
+            <div class="status" style="text-align:left">${escapeHtml([shop.city, shop.state].filter(Boolean).join(", "))}</div>
+          </td>
+          <td>${shop.carCount.toLocaleString()}</td>
+          <td><span class="pill ${sentiment.className}">${sentiment.label}</span></td>
+          <td>${shop.appointments.toLocaleString()}</td>
+          <td>
+            <strong>${shop.healthScore}</strong>
+            <span class="bar" aria-hidden="true"><span style="width:${Math.min(100, (shop.healthScore / maxHealth) * 100)}%"></span></span>
+          </td>
+          <td>${escapeHtml(shop.topCallType)}</td>
+          <td><span class="pill ${riskClass}">${shop.risk}</span></td>
+        </tr>`;
+      }).join("");
+    }
+
+    function renderLists() {
+      const top = [...state.shops].sort((a, b) => a.rank - b.rank).slice(0, 5);
+      const watch = [...state.shops]
+        .filter(shop => shop.risk !== "Low")
+        .sort((a, b) => a.healthScore - b.healthScore || a.carCount - b.carCount)
+        .slice(0, 5);
+
+      els.topShops.innerHTML = top.length ? top.map(shop => listRow(shop, `${shop.healthScore} health`)).join("") : `<div class="empty">No data loaded.</div>`;
+      els.watchList.innerHTML = watch.length ? watch.map(shop => listRow(shop, `${shop.risk} risk`)).join("") : `<div class="empty">No shops currently flagged.</div>`;
+    }
+
+    function listRow(shop, meta) {
+      return `<div class="list-row">
+        <div class="rank">#${shop.rank}</div>
+        <div>
+          <strong>${escapeHtml(shop.shop)}</strong>
+          <small>${shop.carCount.toLocaleString()} cars | ${shop.appointments.toLocaleString()} appointments</small>
+        </div>
+        <small>${escapeHtml(meta)}</small>
+      </div>`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function setStatus(message) {
+      els.status.textContent = message;
+      els.frontStatus.textContent = message;
+    }
+
+    async function loadConfiguredSheet() {
+      const url = convertSheetUrl(DASHBOARD_SETTINGS.googleSheetUrl);
+      if (!url) {
+        setStatus("Add your Google Sheet URL in DASHBOARD_SETTINGS.googleSheetUrl.");
+        return;
+      }
+      setStatus("Loading sheet...");
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Could not load CSV: ${response.status} ${response.statusText}`);
+      processData(await response.text(), "Google Sheets");
+    }
+
+    function refreshConfiguredSheet() {
+      loadConfiguredSheet().catch(error => {
+        setStatus(error.message);
+      });
+    }
+
+    els.refreshSheet.addEventListener("click", refreshConfiguredSheet);
+
+    window.addEventListener("load", () => {
+      refreshConfiguredSheet();
+      const refreshMs = Math.max(1, DASHBOARD_SETTINGS.refreshMinutes) * 60 * 1000;
+      window.setInterval(refreshConfiguredSheet, refreshMs);
+    });
+
+    els.loadSample.addEventListener("click", () => {
+      processData(SAMPLE_CSV, "sample data");
+    });
+
+    [els.search, els.sentimentFilter, els.minCalls, els.sortBy, els.sortDir].forEach(control => {
+      control.addEventListener("input", render);
+      control.addEventListener("change", render);
+    });
+
+    document.querySelectorAll("th[data-sort]").forEach(th => {
+      th.addEventListener("click", () => {
+        const field = th.dataset.sort;
+        if (els.sortBy.value === field) {
+          els.sortDir.value = els.sortDir.value === "asc" ? "desc" : "asc";
+        } else {
+          els.sortBy.value = field;
+          els.sortDir.value = field === "shop" ? "asc" : "desc";
+        }
+        render();
+      });
+    });
+
+    document.querySelectorAll(".tab-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        const showFront = button.dataset.view === "front";
+        els.frontView.hidden = !showFront;
+        els.detailView.hidden = showFront;
+        els.frontTab.classList.toggle("active", showFront);
+        els.detailTab.classList.toggle("active", !showFront);
+      });
+    });
+  </script>
+</body>
+</html>
