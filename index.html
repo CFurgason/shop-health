@@ -324,7 +324,7 @@
 
     .insight-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
       gap: 14px;
       align-items: start;
       margin-bottom: 16px;
@@ -449,14 +449,29 @@
       display: grid;
       grid-template-columns: repeat(12, minmax(10px, 1fr));
       gap: 6px;
-      align-items: end;
+      align-items: stretch;
     }
 
     .bar-col {
       min-width: 0;
+      height: 100%;
       display: grid;
-      gap: 6px;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 5px;
       justify-items: center;
+    }
+
+    .bar-value,
+    .bar-mark {
+      align-self: end;
+    }
+
+    .bar-value {
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      min-height: 12px;
     }
 
     .bar-mark {
@@ -478,6 +493,22 @@
       color: var(--muted);
       font-size: 10px;
       white-space: nowrap;
+    }
+
+    .line-axis {
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(12, minmax(10px, 1fr));
+      gap: 6px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .sparkline text {
+      fill: var(--ink);
+      font-size: 10px;
+      font-weight: 800;
     }
 
     .graph-note {
@@ -849,24 +880,11 @@
       </section>
 
       <section id="detailView" class="view" hidden>
-        <section class="panel detail-score" aria-label="Selected shop score">
-          <div id="detailScore" class="score-value">0</div>
-          <div>
-            <h2 id="detailTitle">Shop Details</h2>
-            <p id="detailSubtitle">Select a shop to see all available months.</p>
-          </div>
-        </section>
-
         <section class="kpi-grid" aria-label="Key performance indicators">
           <article class="kpi">
             <div class="label">Months</div>
             <div id="kpiShops" class="value">0</div>
             <div class="note">available in detail</div>
-          </article>
-          <article class="kpi">
-            <div class="label">Car Count</div>
-            <div id="kpiCars" class="value">0</div>
-            <div class="note">all selected months</div>
           </article>
           <article class="kpi">
             <div class="label">12 Mo Avg Cars</div>
@@ -884,13 +902,21 @@
             <div class="note">column Q review score</div>
           </article>
           <article class="kpi">
-            <div class="label">Appointments</div>
+            <div class="label">Avg Appointments</div>
             <div id="kpiAppointments" class="value">0</div>
-            <div class="note">deduped by shop/month</div>
+            <div class="note">monthly average, deduped</div>
           </article>
         </section>
 
         <section class="insight-grid" aria-label="Shop insights">
+          <section class="panel detail-score" aria-label="Selected shop score">
+            <div id="detailScore" class="score-value">0</div>
+            <div>
+              <h2 id="detailTitle">Shop Details</h2>
+              <p id="detailSubtitle">Select a shop to see all available months.</p>
+            </div>
+          </section>
+
           <section class="panel">
             <div class="panel-head">
               <h2>Latest Month Reviews</h2>
@@ -993,7 +1019,6 @@
       monthChart: document.getElementById("monthChart"),
       columnHelp: document.getElementById("columnHelp"),
       kpiShops: document.getElementById("kpiShops"),
-      kpiCars: document.getElementById("kpiCars"),
       kpiRollingCars: document.getElementById("kpiRollingCars"),
       kpiSentiment: document.getElementById("kpiSentiment"),
       kpiReview: document.getElementById("kpiReview"),
@@ -1576,18 +1601,18 @@
 
     function renderKpis() {
       const rows = monthlyRows(selectedDetailRecords());
-      const totalCars = rows.reduce((sum, row) => sum + row.cars, 0);
       const totalAppointments = rows.reduce((sum, row) => sum + row.appointments, 0);
       const reviewRows = rows.reduce((sum, row) => sum + row.reviews, 0);
       const reviewTotal = rows.reduce((sum, row) => sum + row.reviewTotal, 0);
       const latest = [...rows].reverse().find(row => row.cars || row.reviews || row.appointments || row.sentimentRows) || rows[rows.length - 1];
+      const populatedMonths = rows.filter(row => state.monthLabels[row.month]).length;
+      const avgAppointments = totalAppointments / Math.max(1, populatedMonths);
 
-      els.kpiShops.textContent = rows.filter(row => state.monthLabels[row.month]).length.toLocaleString();
-      els.kpiCars.textContent = totalCars.toLocaleString();
+      els.kpiShops.textContent = populatedMonths.toLocaleString();
       els.kpiRollingCars.textContent = latest ? latest.rollingCars.toFixed(1) : "0.0";
       els.kpiSentiment.textContent = latest?.rollingSentiment != null ? `${Math.round(latest.rollingSentiment)}%` : "N/A";
       els.kpiReview.textContent = reviewRows ? (reviewTotal / reviewRows).toFixed(1) : "N/A";
-      els.kpiAppointments.textContent = totalAppointments.toLocaleString();
+      els.kpiAppointments.textContent = avgAppointments.toFixed(1);
     }
 
     function renderReviewChart() {
@@ -1632,8 +1657,8 @@
         { title: "Avg Sentiment", type: "line", values: rows.map(row => row.sentimentAvg), format: value => `${Math.round(value)}%` },
         { title: "Rolling Avg Sentiment", type: "line", values: rows.map(row => row.rollingSentiment), format: value => `${Math.round(value)}%` },
         { title: "Review Count", type: "bar", color: "yellow", values: rows.map(row => row.reviews), format: value => value.toLocaleString() },
-        { title: "Appointment Count", type: "bar", color: "green", values: rows.map(row => row.appointments), format: value => value.toLocaleString() },
-        { title: "Avg Review", type: "line", values: rows.map(row => row.reviewAvg), format: value => value.toFixed(1) }
+        { title: "Avg Review", type: "line", values: rows.map(row => row.reviewAvg), format: value => value.toFixed(1) },
+        { title: "Appointment Count", type: "bar", color: "green", values: rows.map(row => row.appointments), format: value => value.toLocaleString() }
       ];
 
       els.monthChart.innerHTML = graphs.map(graph => renderKpiGraph(graph, rows)).join("");
@@ -1651,28 +1676,30 @@
           <div class="status">Last 12 months</div>
         </div>
         <div class="kpi-graph-body">
-          ${graph.type === "bar" ? renderBarGraph(cleanValues, rows, graph.color || "") : renderLineGraph(cleanValues)}
+          ${graph.type === "bar" ? renderBarGraph(cleanValues, rows, graph.color || "", graph.format) : renderLineGraph(cleanValues, rows, graph.format)}
           <div class="graph-note">${escapeHtml(note)}</div>
         </div>
       </section>`;
     }
 
-    function renderBarGraph(values, rows, colorClass) {
+    function renderBarGraph(values, rows, colorClass, format) {
       const max = Math.max(1, ...values.map(value => value || 0));
       return `<div class="bar-chart">${values.map((value, index) => {
         const height = value ? Math.max(3, (value / max) * 100) : 2;
         const label = monthLabel(rows[index].month).slice(0, 3);
+        const valueLabel = value == null ? "N/A" : format(value);
         return `<div class="bar-col" title="${escapeHtml(monthLabel(rows[index].month))}: ${value || 0}">
+          <div class="bar-value">${escapeHtml(valueLabel)}</div>
           <div class="bar-mark ${colorClass}" style="height:${height}%"></div>
           <div class="bar-label">${escapeHtml(label)}</div>
         </div>`;
       }).join("")}</div>`;
     }
 
-    function renderLineGraph(values) {
+    function renderLineGraph(values, rows, format) {
       const width = 320;
       const height = 150;
-      const pad = 14;
+      const pad = 24;
       const numeric = values.filter(value => Number.isFinite(value));
       if (!numeric.length) return `<div class="empty">No monthly data available.</div>`;
 
@@ -1684,7 +1711,7 @@
         if (!Number.isFinite(value)) return null;
         const x = pad + index * step;
         const y = height - pad - ((value - min) / range) * (height - pad * 2);
-        return { x, y };
+        return { x, y, value };
       });
       const segments = [];
       let current = [];
@@ -1703,12 +1730,19 @@
         ? `${paths[0]} L ${segments[0][segments[0].length - 1].x.toFixed(1)} ${height - pad} L ${segments[0][0].x.toFixed(1)} ${height - pad} Z`
         : "";
       const circles = points.filter(Boolean).map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"></circle>`).join("");
+      const labels = points.filter(Boolean).map(point => {
+        const y = Math.max(10, point.y - 8);
+        return `<text x="${point.x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle">${escapeHtml(format(point.value))}</text>`;
+      }).join("");
+      const monthLabels = rows.map(row => `<span>${escapeHtml(monthLabel(row.month).slice(0, 3))}</span>`).join("");
 
       return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Line graph">
         ${area ? `<path class="area" d="${area}"></path>` : ""}
         ${paths.map(path => `<path class="line" d="${path}"></path>`).join("")}
         ${circles}
-      </svg>`;
+        ${labels}
+      </svg>
+      <div class="line-axis">${monthLabels}</div>`;
     }
 
     function renderTable() {
