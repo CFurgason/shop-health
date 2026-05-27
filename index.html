@@ -117,7 +117,7 @@
 
     .controls {
       display: grid;
-      grid-template-columns: minmax(220px, 1.2fr) repeat(4, minmax(150px, 1fr));
+      grid-template-columns: minmax(220px, 1.1fr) minmax(220px, 1.1fr) repeat(4, minmax(145px, 1fr));
       gap: 10px;
       margin-bottom: 14px;
       align-items: end;
@@ -658,6 +658,12 @@
     <main>
       <section class="controls" aria-label="Dashboard filters">
         <div class="field">
+          <label for="shopSelect">Shop</label>
+          <select id="shopSelect" class="select">
+            <option value="all">All shops</option>
+          </select>
+        </div>
+        <div class="field">
           <label for="search">Search Shops</label>
           <input id="search" class="input" type="search" placeholder="Shop name, city, state">
         </div>
@@ -839,6 +845,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       saveSheetUrl: document.getElementById("saveSheetUrl"),
       sheetUrl: document.getElementById("sheetUrl"),
       loadSample: document.getElementById("loadSample"),
+      shopSelect: document.getElementById("shopSelect"),
       search: document.getElementById("search"),
       sentimentFilter: document.getElementById("sentimentFilter"),
       minCalls: document.getElementById("minCalls"),
@@ -1110,7 +1117,19 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       els.status.textContent = loadedStatus;
       els.frontStatus.textContent = loadedStatus;
       updateColumnHelp(headers, columns);
+      renderShopOptions();
       render();
+    }
+
+    function renderShopOptions() {
+      const selected = els.shopSelect.value;
+      const options = [...state.shops]
+        .sort((a, b) => a.shop.localeCompare(b.shop))
+        .map(shop => `<option value="${escapeHtml(shop.shop)}">${escapeHtml(shop.shop)}</option>`)
+        .join("");
+
+      els.shopSelect.innerHTML = `<option value="all">All shops</option>${options}`;
+      els.shopSelect.value = state.shops.some(shop => shop.shop === selected) ? selected : "all";
     }
 
     function updateColumnHelp(headers, columns) {
@@ -1127,6 +1146,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
     }
 
     function applyFilters() {
+      const selectedShop = els.shopSelect.value;
       const search = els.search.value.trim().toLowerCase();
       const sentiment = els.sentimentFilter.value;
       const minCalls = Number(els.minCalls.value || 0);
@@ -1134,7 +1154,8 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       state.filtered = state.shops.filter(shop => {
         const haystack = [shop.shop, shop.city, shop.state].join(" ").toLowerCase();
         const sentimentBucket = shop.hasSentiment ? sentimentInfo(shop.sentimentScore).bucket : "unknown";
-        return (!search || haystack.includes(search))
+        return (selectedShop === "all" || shop.shop === selectedShop)
+          && (!search || haystack.includes(search))
           && (sentiment === "all" || sentimentBucket === sentiment)
           && shop.carCount >= minCalls;
       });
@@ -1408,7 +1429,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       processData(SAMPLE_CSV, "sample data");
     });
 
-    [els.search, els.sentimentFilter, els.minCalls, els.sortBy, els.sortDir].forEach(control => {
+    [els.shopSelect, els.search, els.sentimentFilter, els.minCalls, els.sortBy, els.sortDir].forEach(control => {
       control.addEventListener("input", render);
       control.addEventListener("change", render);
     });
