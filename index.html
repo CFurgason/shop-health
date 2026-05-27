@@ -6,18 +6,21 @@
   <title>Shop Health Dashboard</title>
   <style>
     :root {
-      --bg: #f6f7f9;
+      --bg: #f4f8fc;
       --panel: #ffffff;
-      --ink: #17202a;
-      --muted: #687386;
-      --line: #dfe4ea;
-      --soft: #eef2f6;
-      --good: #157f55;
-      --warn: #b26a00;
+      --ink: #10243e;
+      --muted: #5e7087;
+      --line: #d7e2ef;
+      --soft: #eaf1f8;
+      --good: #0f766e;
+      --warn: #b7791f;
       --bad: #b42318;
-      --accent: #2457a6;
-      --accent-soft: #e7eefb;
-      --shadow: 0 8px 24px rgba(23, 32, 42, 0.08);
+      --accent: #1554a1;
+      --accent-strong: #083b78;
+      --accent-soft: #dcecff;
+      --yellow: #f3c63f;
+      --yellow-soft: #fff3bf;
+      --shadow: 0 10px 28px rgba(8, 59, 120, 0.1);
     }
 
     * {
@@ -44,8 +47,9 @@
     }
 
     header {
-      background: #ffffff;
-      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, var(--accent-strong), var(--accent));
+      border-bottom: 4px solid var(--yellow);
+      color: #ffffff;
     }
 
     .header-inner {
@@ -66,19 +70,7 @@
 
     .subtitle {
       margin: 4px 0 0;
-      color: var(--muted);
-    }
-
-    .source-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: flex-end;
-      max-width: 760px;
-    }
-
-    .sheet-url {
-      width: min(420px, 100%);
+      color: #dbeafe;
     }
 
     .input,
@@ -94,7 +86,7 @@
 
     .btn {
       height: 38px;
-      border: 1px solid #1f4f97;
+      border: 1px solid var(--accent-strong);
       border-radius: 7px;
       background: var(--accent);
       color: #ffffff;
@@ -117,7 +109,7 @@
 
     .controls {
       display: grid;
-      grid-template-columns: minmax(220px, 1.1fr) minmax(220px, 1.1fr) repeat(4, minmax(145px, 1fr));
+      grid-template-columns: minmax(240px, 1.3fr) minmax(220px, 1.1fr) repeat(2, minmax(150px, 0.8fr));
       gap: 10px;
       margin-bottom: 14px;
       align-items: end;
@@ -159,9 +151,9 @@
     }
 
     .tab-btn.active {
-      background: #ffffff;
+      background: var(--yellow);
       color: var(--ink);
-      box-shadow: 0 1px 4px rgba(23, 32, 42, 0.12);
+      box-shadow: 0 1px 4px rgba(8, 59, 120, 0.16);
     }
 
     .view[hidden] {
@@ -255,7 +247,7 @@
 
     .score-metrics {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
 
@@ -296,7 +288,7 @@
 
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
       gap: 12px;
       margin-bottom: 16px;
     }
@@ -497,7 +489,7 @@
     .review-fill {
       height: 100%;
       border-radius: inherit;
-      background: var(--accent);
+      background: linear-gradient(90deg, var(--accent), var(--yellow));
       min-width: 0;
     }
 
@@ -598,15 +590,6 @@
         grid-template-columns: 1fr;
       }
 
-      .source-bar {
-        justify-content: stretch;
-      }
-
-      .source-bar .input,
-      .source-bar .btn {
-        flex: 1 1 180px;
-      }
-
       .kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -644,13 +627,7 @@
       <div class="header-inner">
         <div>
           <h1>Shop Health Dashboard</h1>
-          <p class="subtitle">Car count, shop sentiment, duplicate-aware appointments, and shop ranking.</p>
-        </div>
-        <div class="source-bar" aria-label="Data source controls">
-          <input id="sheetUrl" class="input sheet-url" type="url" placeholder="Google Sheet CSV or share URL">
-          <button id="saveSheetUrl" class="btn secondary" type="button">Save URL</button>
-          <button id="refreshSheet" class="btn" type="button">Refresh Sheet</button>
-          <button id="loadSample" class="btn secondary" type="button">Sample Data</button>
+          <p class="subtitle">Current-month shop health with all-month shop detail and review trends.</p>
         </div>
       </div>
     </header>
@@ -668,19 +645,6 @@
           <input id="search" class="input" type="search" placeholder="Shop name, city, state">
         </div>
         <div class="field">
-          <label for="sentimentFilter">Sentiment</label>
-          <select id="sentimentFilter" class="select">
-            <option value="all">All sentiment</option>
-            <option value="positive">Positive</option>
-            <option value="neutral">Neutral</option>
-            <option value="negative">Negative</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="minCalls">Minimum Car Count</label>
-          <input id="minCalls" class="input" type="number" min="0" step="1" placeholder="0">
-        </div>
-        <div class="field">
           <label for="sortBy">Sort</label>
           <select id="sortBy" class="select">
             <option value="rank">Rank</option>
@@ -689,6 +653,7 @@
             <option value="sentimentScore">Sentiment Score</option>
             <option value="appointments">Appointments</option>
             <option value="reviewAvg">Avg Review</option>
+            <option value="rolling12AvgCars">12 Mo Avg Cars</option>
             <option value="healthScore">Health Score</option>
           </select>
         </div>
@@ -710,7 +675,7 @@
         <div class="front-head">
           <div>
             <h2>Shop Scores</h2>
-            <p>Ranked by shop score using sentiment, car count, and unique appointments.</p>
+            <p id="frontScope">Ranked by shop score for the latest loaded month.</p>
           </div>
           <div id="frontStatus" class="status">Waiting for Google Sheet setup.</div>
         </div>
@@ -731,7 +696,12 @@
           <article class="kpi">
             <div class="label">Car Count</div>
             <div id="kpiCars" class="value">0</div>
-            <div class="note">column O next-day call types</div>
+            <div class="note">selected scope</div>
+          </article>
+          <article class="kpi">
+            <div class="label">12 Mo Avg Cars</div>
+            <div id="kpiRollingCars" class="value">0</div>
+            <div class="note">rolling monthly average</div>
           </article>
           <article class="kpi">
             <div class="label">Avg Sentiment</div>
@@ -782,6 +752,7 @@
                   <th data-sort="sentimentScore">Sentiment</th>
                   <th data-sort="appointments">Appointments</th>
                   <th data-sort="reviewAvg">Avg Review</th>
+                  <th data-sort="rolling12AvgCars">12 Mo Avg</th>
                   <th data-sort="healthScore">Health</th>
                   <th>Top Call Type</th>
                   <th>Risk</th>
@@ -789,7 +760,7 @@
               </thead>
               <tbody id="shopRows">
                 <tr>
-                  <td colspan="9" class="empty">Add your Google Sheet URL in the dashboard settings, then refresh the page.</td>
+                  <td colspan="10" class="empty">Loading Google Sheet data...</td>
                 </tr>
               </tbody>
             </table>
@@ -813,42 +784,25 @@
 
     const DASHBOARD_SETTINGS = {
       googleSheetUrl: "https://docs.google.com/spreadsheets/d/1lmSyCCP0RnOhU2CWJv9LzfAaHe7R_y4D56Vr3CAJ3YA/edit?gid=0#gid=0",
-      storageKey: "shopHealthGoogleSheetUrl",
       refreshMinutes: 15
     };
-
-    const SAMPLE_CSV = `Shop,City,State,Advisor,Customer,Phone,Vehicle,VIN,Shop Sentiment,Appt Date,Appointment ID,Status,Repair Order,Notes,Call Type,Survey,Review
-Austin North,Austin,TX,Jill Adams,River Lee,5125550101,Civic,2HGFA16587H000001,Positive,2026-05-27,A-1001,Scheduled,RO-8401,,Next Day Satisfaction,Complete,5 - Excellent
-Austin North,Austin,TX,Jill Adams,River Lee,5125550101,Civic,2HGFA16587H000001,Positive,2026-05-27,A-1001,Scheduled,RO-8401,,Next Day Satisfaction,Complete,5
-Austin North,Austin,TX,Mark Hill,Paula King,5125550102,Accord,1HGCM82633A000002,Neutral,2026-05-28,A-1002,Scheduled,RO-8402,,Welcome New Vehicle,Complete,4 - Good
-Dallas Central,Dallas,TX,Nia Cruz,Chris Ford,2145550122,RAV4,JTMBFREV3HJ000003,Negative,,,,RO-9102,,Returning Lost Vehicle,Complete,2 - Poor
-Dallas Central,Dallas,TX,Nia Cruz,Mia Lane,2145550125,Camry,4T1BF1FK0HU000004,Neutral,2026-05-29,A-1021,Scheduled,RO-9108,,Next Day Satisfaction,Complete,3 - Average
-Denver West,Denver,CO,Noah Stone,Asha Patel,3035550110,F-150,1FTFW1EF1EFA00005,Positive,2026-05-27,A-1200,Scheduled,RO-3188,,Welcome New Customer,Complete,5 - Excellent
-Denver West,Denver,CO,Noah Stone,Evan Brooks,3035550111,Escape,1FMCU0G92HUA00006,Positive,,,,RO-3190,,Next Day Satisfaction,Complete,4
-Denver West,Denver,CO,Noah Stone,Lena Cruz,3035550112,Elantra,5NPD84LF3HH000007,Positive,2026-05-30,A-1202,Scheduled,RO-3194,,Next Day Satisfaction,Complete,5
-Phoenix East,Phoenix,AZ,Amy Voss,Neil Shah,6025550188,Altima,1N4AL3AP0HC000008,Negative,,,,RO-7780,,Welcome New Customer,Complete,1 - Very Poor
-Phoenix East,Phoenix,AZ,Amy Voss,Omar Davis,6025550189,Outback,4S4BSANC5H3000009,Negative,,,,RO-7781,,Returning Lost Vehicle,Complete,2
-Portland South,Portland,OR,Luis Vega,Iris Moon,5035550120,CR-V,7FARW2H83JE000010,Neutral,2026-05-28,A-1401,Scheduled,RO-6501,,Next Day Satisfaction,Complete,4 - Good
-Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM000011,Positive,2026-05-31,A-1402,Scheduled,RO-6502,,Welcome New Vehicle,Complete,5 - Excellent`;
 
     const state = {
       rows: [],
       shops: [],
+      allShops: [],
+      currentMonthShops: [],
       filtered: [],
       sortBy: "rank",
       sortDir: "asc",
-      columns: {}
+      columns: {},
+      latestMonth: "",
+      monthLabels: {}
     };
 
     const els = {
-      refreshSheet: document.getElementById("refreshSheet"),
-      saveSheetUrl: document.getElementById("saveSheetUrl"),
-      sheetUrl: document.getElementById("sheetUrl"),
-      loadSample: document.getElementById("loadSample"),
       shopSelect: document.getElementById("shopSelect"),
       search: document.getElementById("search"),
-      sentimentFilter: document.getElementById("sentimentFilter"),
-      minCalls: document.getElementById("minCalls"),
       sortBy: document.getElementById("sortBy"),
       sortDir: document.getElementById("sortDir"),
       frontView: document.getElementById("frontView"),
@@ -857,6 +811,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       detailTab: document.getElementById("detailTab"),
       scoreCards: document.getElementById("scoreCards"),
       frontStatus: document.getElementById("frontStatus"),
+      frontScope: document.getElementById("frontScope"),
       shopRows: document.getElementById("shopRows"),
       status: document.getElementById("status"),
       reviewChart: document.getElementById("reviewChart"),
@@ -865,6 +820,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       columnHelp: document.getElementById("columnHelp"),
       kpiShops: document.getElementById("kpiShops"),
       kpiCars: document.getElementById("kpiCars"),
+      kpiRollingCars: document.getElementById("kpiRollingCars"),
       kpiSentiment: document.getElementById("kpiSentiment"),
       kpiReview: document.getElementById("kpiReview")
     };
@@ -1000,6 +956,45 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       return match ? Number(match[0]) : null;
     }
 
+    function parseDateValue(value) {
+      const text = normalize(value);
+      if (!text) return null;
+
+      if (/^\d{5,}$/.test(text)) {
+        const excelDate = new Date((Number(text) - 25569) * 86400 * 1000);
+        return Number.isNaN(excelDate.getTime()) ? null : excelDate;
+      }
+
+      const isoMatch = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (isoMatch) {
+        const date = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      const match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+      if (match) {
+        const year = match[3].length === 2 ? Number(`20${match[3]}`) : Number(match[3]);
+        const month = Number(match[1]) - 1;
+        const day = Number(match[2]);
+        const date = new Date(year, month, day);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      const parsed = new Date(text);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function monthKey(date) {
+      if (!date) return "";
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function monthLabel(keyValue) {
+      if (!keyValue) return "Unknown month";
+      const [year, month] = keyValue.split("-").map(Number);
+      return new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    }
+
     function appointmentKey(row, columns) {
       const appointment = get(row, columns.appointment);
       if (appointment) return `appt:${appointment.toLowerCase()}`;
@@ -1018,18 +1013,11 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       return identity ? `fallback:${date.toLowerCase()}|${identity}` : "";
     }
 
-    function processData(csvText, label) {
-      const raw = parseCsv(csvText);
-      if (raw.length < 2) throw new Error("The CSV needs a header row and at least one data row.");
-
-      const headers = raw[0].map(normalize);
-      const rows = raw.slice(1);
-      const columns = detectColumns(headers);
-      state.rows = rows;
-      state.columns = columns;
-
+    function buildShopSummaries(records, allRecords) {
       const grouped = new Map();
-      for (const row of rows) {
+      for (const record of records) {
+        const row = record.row;
+        const columns = state.columns;
         const shopName = get(row, columns.shop) || "Unknown Shop";
         if (!grouped.has(shopName)) {
           grouped.set(shopName, {
@@ -1044,6 +1032,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
             reviewTotal: 0,
             reviewRows: 0,
             reviewBuckets: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            monthCars: {},
             callTypes: {},
             appointmentKeys: new Set()
           });
@@ -1055,6 +1044,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
         const callType = get(row, columns.callType);
         if (callTypeMatches(callType)) {
           shop.carCount += 1;
+          if (record.month) shop.monthCars[record.month] = (shop.monthCars[record.month] || 0) + 1;
           shop.callTypes[callType] = (shop.callTypes[callType] || 0) + 1;
         }
 
@@ -1079,11 +1069,12 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       const maxCars = Math.max(1, ...Array.from(grouped.values()).map(shop => shop.carCount));
       const maxAppointments = Math.max(1, ...Array.from(grouped.values()).map(shop => shop.appointmentKeys.size));
 
-      state.shops = Array.from(grouped.values()).map(shop => {
+      const summaries = Array.from(grouped.values()).map(shop => {
         const hasSentiment = shop.sentimentRows > 0;
         const sentimentScore = hasSentiment ? shop.sentimentTotal / shop.sentimentRows : null;
         const reviewAvg = shop.reviewRows ? shop.reviewTotal / shop.reviewRows : null;
         const appointments = shop.appointmentKeys.size;
+        const rolling12AvgCars = rolling12CarAverage(shop.shop, allRecords);
         const activityScore = (shop.carCount / maxCars) * 45;
         const appointmentScore = (appointments / maxAppointments) * 15;
         const sentimentComponent = hasSentiment ? sentimentScore * 0.4 : 0;
@@ -1103,19 +1094,78 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
           hasSentiment,
           sentimentScore,
           reviewAvg,
+          rolling12AvgCars,
           healthScore,
           topCallType,
           risk
         };
       }).sort((a, b) => b.healthScore - a.healthScore || b.carCount - a.carCount || a.shop.localeCompare(b.shop));
 
-      state.shops.forEach((shop, index) => {
+      summaries.forEach((shop, index) => {
         shop.rank = index + 1;
       });
+
+      return summaries;
+    }
+
+    function rolling12CarAverage(shopName, records) {
+      if (!state.latestMonth) return 0;
+
+      const [latestYear, latestMonth] = state.latestMonth.split("-").map(Number);
+      const months = [];
+      for (let offset = 11; offset >= 0; offset -= 1) {
+        const date = new Date(latestYear, latestMonth - 1 - offset, 1);
+        months.push(monthKey(date));
+      }
+
+      const monthCounts = Object.fromEntries(months.map(month => [month, 0]));
+      for (const record of records) {
+        if (record.shop !== shopName || !record.month || !(record.month in monthCounts)) continue;
+        if (callTypeMatches(get(record.row, state.columns.callType))) {
+          monthCounts[record.month] += 1;
+        }
+      }
+
+      const availableMonths = months.filter(month => state.monthLabels[month]);
+      const denominator = Math.max(1, availableMonths.length || months.length);
+      return Object.values(monthCounts).reduce((sum, count) => sum + count, 0) / denominator;
+    }
+
+    function processData(csvText, label) {
+      const raw = parseCsv(csvText);
+      if (raw.length < 2) throw new Error("The CSV needs a header row and at least one data row.");
+
+      const headers = raw[0].map(normalize);
+      const rows = raw.slice(1);
+      const columns = detectColumns(headers);
+      state.rows = rows;
+      state.columns = columns;
+
+      const records = rows.map(row => {
+        const date = parseDateValue(get(row, columns.appointmentDate));
+        const month = monthKey(date);
+        return {
+          row,
+          shop: get(row, columns.shop) || "Unknown Shop",
+          month
+        };
+      });
+
+      const months = [...new Set(records.map(record => record.month).filter(Boolean))].sort();
+      state.latestMonth = months[months.length - 1] || "";
+      state.monthLabels = Object.fromEntries(months.map(month => [month, monthLabel(month)]));
+      state.allShops = buildShopSummaries(records, records);
+      state.currentMonthShops = state.latestMonth
+        ? buildShopSummaries(records.filter(record => record.month === state.latestMonth), records)
+        : state.allShops;
+      state.shops = state.allShops;
 
       const loadedStatus = `${state.rows.length.toLocaleString()} rows loaded from ${label}.`;
       els.status.textContent = loadedStatus;
       els.frontStatus.textContent = loadedStatus;
+      els.frontScope.textContent = state.latestMonth
+        ? `Showing ${monthLabel(state.latestMonth)}, the latest month in the loaded data.`
+        : "Showing all loaded data because no date column was detected.";
       updateColumnHelp(headers, columns);
       renderShopOptions();
       render();
@@ -1145,33 +1195,32 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       els.columnHelp.innerHTML = parts.map(part => `<div>${escapeHtml(part)}</div>`).join("");
     }
 
-    function applyFilters() {
+    function visibleShops() {
+      return els.frontView.hidden ? state.allShops : state.currentMonthShops;
+    }
+
+    function applyFilters(sourceShops) {
       const selectedShop = els.shopSelect.value;
       const search = els.search.value.trim().toLowerCase();
-      const sentiment = els.sentimentFilter.value;
-      const minCalls = Number(els.minCalls.value || 0);
 
-      state.filtered = state.shops.filter(shop => {
+      state.filtered = sourceShops.filter(shop => {
         const haystack = [shop.shop, shop.city, shop.state].join(" ").toLowerCase();
-        const sentimentBucket = shop.hasSentiment ? sentimentInfo(shop.sentimentScore).bucket : "unknown";
         return (selectedShop === "all" || shop.shop === selectedShop)
-          && (!search || haystack.includes(search))
-          && (sentiment === "all" || sentimentBucket === sentiment)
-          && shop.carCount >= minCalls;
+          && (!search || haystack.includes(search));
       });
 
       const direction = state.sortDir === "asc" ? 1 : -1;
       const sortBy = state.sortBy;
       state.filtered.sort((a, b) => {
         if (sortBy === "shop") return a.shop.localeCompare(b.shop) * direction;
-        return ((a[sortBy] || 0) - (b[sortBy] || 0)) * direction || a.shop.localeCompare(b.shop);
+        return ((a[sortBy] ?? -1) - (b[sortBy] ?? -1)) * direction || a.shop.localeCompare(b.shop);
       });
     }
 
     function render() {
       state.sortBy = els.sortBy.value;
       state.sortDir = els.sortDir.value;
-      applyFilters();
+      applyFilters(visibleShops());
       renderScoreCards();
       renderKpis();
       renderReviewChart();
@@ -1209,6 +1258,10 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
               <span>Cars</span>
             </div>
             <div class="mini-metric">
+              <strong>${shop.rolling12AvgCars.toFixed(1)}</strong>
+              <span>12 Mo Avg</span>
+            </div>
+            <div class="mini-metric">
               <strong>${shop.hasSentiment ? `${Math.round(shop.sentimentScore)}%` : "N/A"}</strong>
               <span>Sentiment</span>
             </div>
@@ -1230,9 +1283,13 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
         : 0;
       const reviewRows = shops.reduce((sum, shop) => sum + shop.reviewRows, 0);
       const reviewTotal = shops.reduce((sum, shop) => sum + shop.reviewTotal, 0);
+      const rollingCars = shops.length
+        ? shops.reduce((sum, shop) => sum + shop.rolling12AvgCars, 0)
+        : 0;
 
       els.kpiShops.textContent = shops.length.toLocaleString();
       els.kpiCars.textContent = totalCars.toLocaleString();
+      els.kpiRollingCars.textContent = rollingCars.toFixed(1);
       els.kpiSentiment.textContent = shopsWithSentiment.length ? `${Math.round(avgSentiment)}%` : "N/A";
       els.kpiReview.textContent = reviewRows ? (reviewTotal / reviewRows).toFixed(1) : "N/A";
     }
@@ -1275,7 +1332,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
 
     function renderTable() {
       if (!state.filtered.length) {
-        els.shopRows.innerHTML = `<tr><td colspan="9" class="empty">No shops match the current filters.</td></tr>`;
+        els.shopRows.innerHTML = `<tr><td colspan="10" class="empty">No shops match the current filters.</td></tr>`;
         return;
       }
 
@@ -1295,6 +1352,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
           <td><span class="pill ${sentiment.className}">${sentiment.label}</span></td>
           <td>${shop.appointments.toLocaleString()}</td>
           <td>${shop.reviewAvg ? shop.reviewAvg.toFixed(1) : "N/A"}</td>
+          <td>${shop.rolling12AvgCars.toFixed(1)}</td>
           <td>
             <strong>${shop.healthScore}</strong>
             <span class="bar" aria-hidden="true"><span style="width:${Math.min(100, (shop.healthScore / maxHealth) * 100)}%"></span></span>
@@ -1314,6 +1372,8 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
 
       const totalAppointments = shops.reduce((sum, shop) => sum + shop.appointments, 0);
       const attention = shops.filter(shop => shop.risk !== "Low").length;
+      const rollingCars = shops.reduce((sum, shop) => sum + shop.rolling12AvgCars, 0);
+      const monthCount = Object.keys(state.monthLabels).length;
       const bestReview = shops
         .filter(shop => shop.reviewAvg)
         .sort((a, b) => b.reviewAvg - a.reviewAvg || b.reviewRows - a.reviewRows)[0];
@@ -1331,6 +1391,16 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
           label: "Needs attention",
           note: "low sentiment or low activity",
           value: attention.toLocaleString()
+        },
+        {
+          label: "Available months",
+          note: state.latestMonth ? `latest: ${monthLabel(state.latestMonth)}` : "no month detected",
+          value: monthCount.toLocaleString()
+        },
+        {
+          label: "12 mo avg cars",
+          note: "rolling monthly car count",
+          value: rollingCars.toFixed(1)
         },
         {
           label: "Best review average",
@@ -1368,31 +1438,10 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       els.frontStatus.textContent = message;
     }
 
-    function configuredSheetUrl() {
-      return els.sheetUrl.value.trim() || DASHBOARD_SETTINGS.googleSheetUrl.trim();
-    }
-
-    function loadSavedSheetUrl() {
-      const savedUrl = window.localStorage.getItem(DASHBOARD_SETTINGS.storageKey) || DASHBOARD_SETTINGS.googleSheetUrl;
-      els.sheetUrl.value = savedUrl;
-    }
-
-    function saveSheetUrl() {
-      const url = els.sheetUrl.value.trim();
-      if (url) {
-        window.localStorage.setItem(DASHBOARD_SETTINGS.storageKey, url);
-        setStatus("Google Sheet URL saved. Refreshing sheet...");
-        refreshConfiguredSheet();
-      } else {
-        window.localStorage.removeItem(DASHBOARD_SETTINGS.storageKey);
-        setStatus("Google Sheet URL cleared.");
-      }
-    }
-
     async function loadConfiguredSheet() {
-      const url = convertSheetUrl(configuredSheetUrl());
+      const url = convertSheetUrl(DASHBOARD_SETTINGS.googleSheetUrl);
       if (!url) {
-        setStatus("Paste your Google Sheet URL, save it, then refresh the sheet.");
+        setStatus("Add your Google Sheet URL in DASHBOARD_SETTINGS.googleSheetUrl.");
         return;
       }
       setStatus("Loading sheet...");
@@ -1412,24 +1461,13 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       });
     }
 
-    els.refreshSheet.addEventListener("click", refreshConfiguredSheet);
-    els.saveSheetUrl.addEventListener("click", saveSheetUrl);
-    els.sheetUrl.addEventListener("keydown", event => {
-      if (event.key === "Enter") saveSheetUrl();
-    });
-
     window.addEventListener("load", () => {
-      loadSavedSheetUrl();
       refreshConfiguredSheet();
       const refreshMs = Math.max(1, DASHBOARD_SETTINGS.refreshMinutes) * 60 * 1000;
       window.setInterval(refreshConfiguredSheet, refreshMs);
     });
 
-    els.loadSample.addEventListener("click", () => {
-      processData(SAMPLE_CSV, "sample data");
-    });
-
-    [els.shopSelect, els.search, els.sentimentFilter, els.minCalls, els.sortBy, els.sortDir].forEach(control => {
+    [els.shopSelect, els.search, els.sortBy, els.sortDir].forEach(control => {
       control.addEventListener("input", render);
       control.addEventListener("change", render);
     });
@@ -1454,6 +1492,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
         els.detailView.hidden = showFront;
         els.frontTab.classList.toggle("active", showFront);
         els.detailTab.classList.toggle("active", !showFront);
+        render();
       });
     });
   </script>
