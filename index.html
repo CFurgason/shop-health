@@ -288,7 +288,7 @@
 
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      grid-template-columns: repeat(6, minmax(140px, 1fr));
       gap: 12px;
       margin-bottom: 16px;
     }
@@ -883,6 +883,11 @@
             <div id="kpiReview" class="value">N/A</div>
             <div class="note">column Q review score</div>
           </article>
+          <article class="kpi">
+            <div class="label">Appointments</div>
+            <div id="kpiAppointments" class="value">0</div>
+            <div class="note">deduped by shop/month</div>
+          </article>
         </section>
 
         <section class="insight-grid" aria-label="Shop insights">
@@ -991,7 +996,8 @@
       kpiCars: document.getElementById("kpiCars"),
       kpiRollingCars: document.getElementById("kpiRollingCars"),
       kpiSentiment: document.getElementById("kpiSentiment"),
-      kpiReview: document.getElementById("kpiReview")
+      kpiReview: document.getElementById("kpiReview"),
+      kpiAppointments: document.getElementById("kpiAppointments")
     };
 
     function parseCsv(text) {
@@ -1351,7 +1357,7 @@
         }
 
         const apptKey = appointmentKey(record.row, columns);
-        if (apptKey) summary.appointmentKeys.add(apptKey);
+        if (apptKey) summary.appointmentKeys.add(`${record.shop}|${apptKey}`);
       }
 
       return Object.fromEntries([...grouped.entries()].map(([month, summary]) => [month, {
@@ -1571,6 +1577,7 @@
     function renderKpis() {
       const rows = monthlyRows(selectedDetailRecords());
       const totalCars = rows.reduce((sum, row) => sum + row.cars, 0);
+      const totalAppointments = rows.reduce((sum, row) => sum + row.appointments, 0);
       const reviewRows = rows.reduce((sum, row) => sum + row.reviews, 0);
       const reviewTotal = rows.reduce((sum, row) => sum + row.reviewTotal, 0);
       const latest = [...rows].reverse().find(row => row.cars || row.reviews || row.appointments || row.sentimentRows) || rows[rows.length - 1];
@@ -1580,6 +1587,7 @@
       els.kpiRollingCars.textContent = latest ? latest.rollingCars.toFixed(1) : "0.0";
       els.kpiSentiment.textContent = latest?.rollingSentiment != null ? `${Math.round(latest.rollingSentiment)}%` : "N/A";
       els.kpiReview.textContent = reviewRows ? (reviewTotal / reviewRows).toFixed(1) : "N/A";
+      els.kpiAppointments.textContent = totalAppointments.toLocaleString();
     }
 
     function renderReviewChart() {
@@ -1621,10 +1629,10 @@
       const graphs = [
         { title: "Car Count", type: "bar", color: "", values: rows.map(row => row.cars), format: value => value.toLocaleString() },
         { title: "Rolling Car Avg", type: "line", values: rows.map(row => row.rollingCars), format: value => value.toFixed(1) },
-        { title: "Sentiment", type: "line", values: rows.map(row => row.sentimentAvg), format: value => `${Math.round(value)}%` },
-        { title: "Rolling Sentiment", type: "line", values: rows.map(row => row.rollingSentiment), format: value => `${Math.round(value)}%` },
-        { title: "Reviews", type: "bar", color: "yellow", values: rows.map(row => row.reviews), format: value => value.toLocaleString() },
-        { title: "Appointments", type: "bar", color: "green", values: rows.map(row => row.appointments), format: value => value.toLocaleString() },
+        { title: "Avg Sentiment", type: "line", values: rows.map(row => row.sentimentAvg), format: value => `${Math.round(value)}%` },
+        { title: "Rolling Avg Sentiment", type: "line", values: rows.map(row => row.rollingSentiment), format: value => `${Math.round(value)}%` },
+        { title: "Review Count", type: "bar", color: "yellow", values: rows.map(row => row.reviews), format: value => value.toLocaleString() },
+        { title: "Appointment Count", type: "bar", color: "green", values: rows.map(row => row.appointments), format: value => value.toLocaleString() },
         { title: "Avg Review", type: "line", values: rows.map(row => row.reviewAvg), format: value => value.toFixed(1) }
       ];
 
