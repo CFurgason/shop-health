@@ -330,6 +330,77 @@
       margin-bottom: 16px;
     }
 
+    .detail-score {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+      padding: 14px;
+    }
+
+    .detail-score h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .detail-score p {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+
+    .month-chart {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .month-row {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr) 76px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .month-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .month-bars {
+      display: grid;
+      gap: 3px;
+    }
+
+    .month-track {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+
+    .month-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .month-fill.review {
+      background: var(--yellow);
+    }
+
+    .month-fill.appointment {
+      background: #0f766e;
+    }
+
+    .month-counts {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
     .layout {
       display: grid;
       gap: 14px;
@@ -368,6 +439,11 @@
       overflow: auto;
       max-height: calc(100vh - 324px);
       min-height: 320px;
+    }
+
+    .table-wrap.monthly {
+      max-height: none;
+      min-height: 0;
     }
 
     table {
@@ -687,16 +763,24 @@
       </section>
 
       <section id="detailView" class="view" hidden>
+        <section class="panel detail-score" aria-label="Selected shop score">
+          <div id="detailScore" class="score-value">0</div>
+          <div>
+            <h2 id="detailTitle">Shop Details</h2>
+            <p id="detailSubtitle">Select a shop to see all available months.</p>
+          </div>
+        </section>
+
         <section class="kpi-grid" aria-label="Key performance indicators">
           <article class="kpi">
-            <div class="label">Shops</div>
+            <div class="label">Months</div>
             <div id="kpiShops" class="value">0</div>
-            <div class="note">visible after filters</div>
+            <div class="note">available in detail</div>
           </article>
           <article class="kpi">
             <div class="label">Car Count</div>
             <div id="kpiCars" class="value">0</div>
-            <div class="note">selected scope</div>
+            <div class="note">all selected months</div>
           </article>
           <article class="kpi">
             <div class="label">12 Mo Avg Cars</div>
@@ -704,9 +788,9 @@
             <div class="note">rolling monthly average</div>
           </article>
           <article class="kpi">
-            <div class="label">Avg Sentiment</div>
+            <div class="label">12 Mo Avg Sentiment</div>
             <div id="kpiSentiment" class="value">0%</div>
-            <div class="note">column I shop sentiment</div>
+            <div class="note">rolling monthly average</div>
           </article>
           <article class="kpi">
             <div class="label">Avg Review</div>
@@ -718,19 +802,20 @@
         <section class="insight-grid" aria-label="Shop insights">
           <section class="panel">
             <div class="panel-head">
-              <h2>Review Distribution</h2>
+              <h2>Latest Month Reviews</h2>
               <div id="reviewStatus" class="status">No review data loaded.</div>
             </div>
             <div id="reviewChart" class="review-chart">
-              <div class="empty">Column Q reviews will appear here after data loads.</div>
+              <div class="empty">Latest month reviews will appear here after data loads.</div>
             </div>
           </section>
 
           <section class="panel">
             <div class="panel-head">
-              <h2>Filtered Snapshot</h2>
+              <h2>Last 12 Months</h2>
+              <div class="status">Cars | Reviews | Appointments</div>
             </div>
-            <div id="insightList" class="insight-list">
+            <div id="monthChart" class="month-chart">
               <div class="empty">No data loaded.</div>
             </div>
           </section>
@@ -739,28 +824,26 @@
         <section class="layout">
           <section class="panel">
           <div class="panel-head">
-            <h2>Shop Ranking</h2>
+            <h2>Monthly KPIs</h2>
             <div id="status" class="status">Waiting for Google Sheet setup.</div>
           </div>
-          <div class="table-wrap">
+          <div class="table-wrap monthly">
             <table>
               <thead>
                 <tr>
-                  <th data-sort="rank">Rank</th>
-                  <th data-sort="shop">Shop</th>
-                  <th data-sort="carCount">Car Count</th>
-                  <th data-sort="sentimentScore">Sentiment</th>
-                  <th data-sort="appointments">Appointments</th>
-                  <th data-sort="reviewAvg">Avg Review</th>
-                  <th data-sort="rolling12AvgCars">12 Mo Avg</th>
-                  <th data-sort="healthScore">Health</th>
-                  <th>Top Call Type</th>
-                  <th>Risk</th>
+                  <th>Month</th>
+                  <th>Cars</th>
+                  <th>Rolling Cars</th>
+                  <th>Sentiment</th>
+                  <th>Rolling Sentiment</th>
+                  <th>Reviews</th>
+                  <th>Appointments</th>
+                  <th>Avg Review</th>
                 </tr>
               </thead>
               <tbody id="shopRows">
                 <tr>
-                  <td colspan="10" class="empty">Loading Google Sheet data...</td>
+                  <td colspan="8" class="empty">Loading Google Sheet data...</td>
                 </tr>
               </tbody>
             </table>
@@ -789,6 +872,7 @@
 
     const state = {
       rows: [],
+      records: [],
       shops: [],
       allShops: [],
       currentMonthShops: [],
@@ -812,11 +896,14 @@
       scoreCards: document.getElementById("scoreCards"),
       frontStatus: document.getElementById("frontStatus"),
       frontScope: document.getElementById("frontScope"),
+      detailScore: document.getElementById("detailScore"),
+      detailTitle: document.getElementById("detailTitle"),
+      detailSubtitle: document.getElementById("detailSubtitle"),
       shopRows: document.getElementById("shopRows"),
       status: document.getElementById("status"),
       reviewChart: document.getElementById("reviewChart"),
       reviewStatus: document.getElementById("reviewStatus"),
-      insightList: document.getElementById("insightList"),
+      monthChart: document.getElementById("monthChart"),
       columnHelp: document.getElementById("columnHelp"),
       kpiShops: document.getElementById("kpiShops"),
       kpiCars: document.getElementById("kpiCars"),
@@ -937,7 +1024,7 @@
         callType: findColumn(headers, ["Call Type", "Next Day Call", "Call Category", "Call Reason"], 14),
         review: findColumn(headers, ["Review", "Review Score", "Rating", "Survey Score", "Customer Review"], 16),
         appointment: findColumn(headers, ["Appointment ID", "Appointment", "Appt ID", "Appointment Number", "Confirmation"], -1),
-        appointmentDate: findColumn(headers, ["Appointment Date", "Appt Date", "Scheduled Date", "Schedule Date"], -1),
+        appointmentDate: findColumn(headers, ["Appointment Date", "Appt Date", "Scheduled Date", "Schedule Date", "Date", "Call Date", "Created Date", "Completed Date"], -1),
         customer: findColumn(headers, ["Customer", "Customer Name", "Client"], -1),
         phone: findColumn(headers, ["Phone", "Phone Number", "Mobile"], -1),
         email: findColumn(headers, ["Email", "Email Address"], -1),
@@ -952,8 +1039,8 @@
     }
 
     function reviewScore(value) {
-      const match = normalize(value).match(/[1-5]/);
-      return match ? Number(match[0]) : null;
+      const first = normalize(value).charAt(0);
+      return /^[1-5]$/.test(first) ? Number(first) : null;
     }
 
     function parseDateValue(value) {
@@ -1131,6 +1218,103 @@
       return Object.values(monthCounts).reduce((sum, count) => sum + count, 0) / denominator;
     }
 
+    function last12Months() {
+      if (!state.latestMonth) return Object.keys(state.monthLabels).slice(-12);
+      const [latestYear, latestMonth] = state.latestMonth.split("-").map(Number);
+      const months = [];
+      for (let offset = 11; offset >= 0; offset -= 1) {
+        months.push(monthKey(new Date(latestYear, latestMonth - 1 - offset, 1)));
+      }
+      return months;
+    }
+
+    function selectedDetailRecords() {
+      const selectedShop = els.shopSelect.value;
+      return state.records.filter(record => selectedShop === "all" || record.shop === selectedShop);
+    }
+
+    function summarizeMonthly(records) {
+      const grouped = new Map();
+      const columns = state.columns;
+
+      for (const record of records) {
+        if (!record.month) continue;
+        if (!grouped.has(record.month)) {
+          grouped.set(record.month, {
+            month: record.month,
+            cars: 0,
+            sentimentTotal: 0,
+            sentimentRows: 0,
+            reviews: 0,
+            reviewTotal: 0,
+            reviewBuckets: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            appointmentKeys: new Set()
+          });
+        }
+
+        const summary = grouped.get(record.month);
+        if (callTypeMatches(get(record.row, columns.callType))) summary.cars += 1;
+
+        const sentiment = sentimentInfo(get(record.row, columns.sentiment));
+        if (sentiment.scorable) {
+          summary.sentimentTotal += sentiment.score;
+          summary.sentimentRows += 1;
+        }
+
+        const review = reviewScore(get(record.row, columns.review));
+        if (review) {
+          summary.reviews += 1;
+          summary.reviewTotal += review;
+          summary.reviewBuckets[review] += 1;
+        }
+
+        const apptKey = appointmentKey(record.row, columns);
+        if (apptKey) summary.appointmentKeys.add(apptKey);
+      }
+
+      return Object.fromEntries([...grouped.entries()].map(([month, summary]) => [month, {
+        ...summary,
+        appointments: summary.appointmentKeys.size,
+        sentimentAvg: summary.sentimentRows ? summary.sentimentTotal / summary.sentimentRows : null,
+        reviewAvg: summary.reviews ? summary.reviewTotal / summary.reviews : null
+      }]));
+    }
+
+    function monthlyRows(records) {
+      const summaries = summarizeMonthly(records);
+      const months = last12Months();
+      return months.map((month, index) => {
+        const summary = summaries[month] || {
+          month,
+          cars: 0,
+          sentimentTotal: 0,
+          sentimentRows: 0,
+          reviews: 0,
+          reviewTotal: 0,
+          reviewBuckets: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+          appointments: 0,
+          sentimentAvg: null,
+          reviewAvg: null
+        };
+        const windowMonths = months.slice(Math.max(0, index - 11), index + 1);
+        const rollingCars = windowMonths.reduce((sum, windowMonth) => sum + (summaries[windowMonth]?.cars || 0), 0) / Math.max(1, windowMonths.length);
+        const rollingSentimentRows = windowMonths.reduce((sum, windowMonth) => sum + (summaries[windowMonth]?.sentimentRows || 0), 0);
+        const rollingSentimentTotal = windowMonths.reduce((sum, windowMonth) => sum + (summaries[windowMonth]?.sentimentTotal || 0), 0);
+
+        return {
+          ...summary,
+          rollingCars,
+          rollingSentiment: rollingSentimentRows ? rollingSentimentTotal / rollingSentimentRows : null
+        };
+      });
+    }
+
+    function activeDetailShop() {
+      const selectedShop = els.shopSelect.value;
+      if (selectedShop === "all") return null;
+      return state.allShops.find(shop => shop.shop === selectedShop) || null;
+    }
+
     function processData(csvText, label) {
       const raw = parseCsv(csvText);
       if (raw.length < 2) throw new Error("The CSV needs a header row and at least one data row.");
@@ -1150,6 +1334,7 @@
           month
         };
       });
+      state.records = records;
 
       const months = [...new Set(records.map(record => record.month).filter(Boolean))].sort();
       state.latestMonth = months[months.length - 1] || "";
@@ -1222,10 +1407,20 @@
       state.sortDir = els.sortDir.value;
       applyFilters(visibleShops());
       renderScoreCards();
+      renderDetailScore();
       renderKpis();
       renderReviewChart();
+      renderMonthChart();
       renderTable();
-      renderInsights();
+    }
+
+    function showView(view) {
+      const showFront = view === "front";
+      els.frontView.hidden = !showFront;
+      els.detailView.hidden = showFront;
+      els.frontTab.classList.toggle("active", showFront);
+      els.detailTab.classList.toggle("active", !showFront);
+      render();
     }
 
     function renderScoreCards() {
@@ -1274,46 +1469,50 @@
       }).join("");
     }
 
-    function renderKpis() {
-      const shops = state.filtered;
-      const totalCars = shops.reduce((sum, shop) => sum + shop.carCount, 0);
-      const shopsWithSentiment = shops.filter(shop => shop.hasSentiment);
-      const avgSentiment = shopsWithSentiment.length
-        ? shopsWithSentiment.reduce((sum, shop) => sum + shop.sentimentScore, 0) / shopsWithSentiment.length
-        : 0;
-      const reviewRows = shops.reduce((sum, shop) => sum + shop.reviewRows, 0);
-      const reviewTotal = shops.reduce((sum, shop) => sum + shop.reviewTotal, 0);
-      const rollingCars = shops.length
-        ? shops.reduce((sum, shop) => sum + shop.rolling12AvgCars, 0)
-        : 0;
+    function renderDetailScore() {
+      const shop = activeDetailShop();
+      if (!shop) {
+        els.detailScore.textContent = "0";
+        els.detailScore.className = "score-value";
+        els.detailTitle.textContent = "All Shops";
+        els.detailSubtitle.textContent = "Select a shop to open a shop-specific detail page.";
+        return;
+      }
 
-      els.kpiShops.textContent = shops.length.toLocaleString();
+      const scoreClass = shop.healthScore >= 75 ? "good" : shop.healthScore >= 50 ? "warn" : "bad";
+      els.detailScore.textContent = shop.healthScore;
+      els.detailScore.className = `score-value ${scoreClass}`;
+      els.detailTitle.textContent = shop.shop;
+      els.detailSubtitle.textContent = `${[shop.city, shop.state].filter(Boolean).join(", ") || "All available months"} | ${Object.keys(state.monthLabels).length} months loaded`;
+    }
+
+    function renderKpis() {
+      const rows = monthlyRows(selectedDetailRecords());
+      const totalCars = rows.reduce((sum, row) => sum + row.cars, 0);
+      const reviewRows = rows.reduce((sum, row) => sum + row.reviews, 0);
+      const reviewTotal = rows.reduce((sum, row) => sum + row.reviewTotal, 0);
+      const latest = [...rows].reverse().find(row => row.cars || row.reviews || row.appointments || row.sentimentRows) || rows[rows.length - 1];
+
+      els.kpiShops.textContent = rows.filter(row => state.monthLabels[row.month]).length.toLocaleString();
       els.kpiCars.textContent = totalCars.toLocaleString();
-      els.kpiRollingCars.textContent = rollingCars.toFixed(1);
-      els.kpiSentiment.textContent = shopsWithSentiment.length ? `${Math.round(avgSentiment)}%` : "N/A";
+      els.kpiRollingCars.textContent = latest ? latest.rollingCars.toFixed(1) : "0.0";
+      els.kpiSentiment.textContent = latest?.rollingSentiment != null ? `${Math.round(latest.rollingSentiment)}%` : "N/A";
       els.kpiReview.textContent = reviewRows ? (reviewTotal / reviewRows).toFixed(1) : "N/A";
     }
 
-    function reviewDistribution(shops) {
-      return shops.reduce((buckets, shop) => {
-        for (let score = 1; score <= 5; score += 1) {
-          buckets[score] += shop.reviewBuckets[score] || 0;
-        }
-        return buckets;
-      }, { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
-    }
-
     function renderReviewChart() {
-      const buckets = reviewDistribution(state.filtered);
+      const rows = monthlyRows(selectedDetailRecords());
+      const latest = rows.find(row => row.month === state.latestMonth) || rows[rows.length - 1];
+      const buckets = latest?.reviewBuckets || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       const total = Object.values(buckets).reduce((sum, count) => sum + count, 0);
       const max = Math.max(1, ...Object.values(buckets));
 
       els.reviewStatus.textContent = total
-        ? `${total.toLocaleString()} reviews in current filters.`
-        : "No review data in current filters.";
+        ? `${total.toLocaleString()} reviews in ${monthLabel(latest.month)}.`
+        : "No latest-month review data.";
 
       if (!total) {
-        els.reviewChart.innerHTML = `<div class="empty">No review scores found in column Q for the current filters.</div>`;
+        els.reviewChart.innerHTML = `<div class="empty">No 1-5 review scores found for the latest month.</div>`;
         return;
       }
 
@@ -1330,97 +1529,47 @@
       }).join("");
     }
 
-    function renderTable() {
-      if (!state.filtered.length) {
-        els.shopRows.innerHTML = `<tr><td colspan="10" class="empty">No shops match the current filters.</td></tr>`;
+    function renderMonthChart() {
+      const rows = monthlyRows(selectedDetailRecords());
+      const maxCars = Math.max(1, ...rows.map(row => row.cars));
+      const maxReviews = Math.max(1, ...rows.map(row => row.reviews));
+      const maxAppointments = Math.max(1, ...rows.map(row => row.appointments));
+
+      if (!rows.length) {
+        els.monthChart.innerHTML = `<div class="empty">No monthly data available.</div>`;
         return;
       }
 
-      const maxHealth = Math.max(1, ...state.filtered.map(shop => shop.healthScore));
-      els.shopRows.innerHTML = state.filtered.map(shop => {
-        const sentiment = shop.hasSentiment
-          ? sentimentInfo(shop.sentimentScore)
-          : { label: "No Sentiment", className: "warn" };
-        const riskClass = shop.risk === "Low" ? "good" : shop.risk === "Medium" ? "warn" : "bad";
-        return `<tr>
-          <td class="rank">#${shop.rank}</td>
-          <td>
-            <strong>${escapeHtml(shop.shop)}</strong>
-            <div class="status" style="text-align:left">${escapeHtml([shop.city, shop.state].filter(Boolean).join(", "))}</div>
-          </td>
-          <td>${shop.carCount.toLocaleString()}</td>
-          <td><span class="pill ${sentiment.className}">${sentiment.label}</span></td>
-          <td>${shop.appointments.toLocaleString()}</td>
-          <td>${shop.reviewAvg ? shop.reviewAvg.toFixed(1) : "N/A"}</td>
-          <td>${shop.rolling12AvgCars.toFixed(1)}</td>
-          <td>
-            <strong>${shop.healthScore}</strong>
-            <span class="bar" aria-hidden="true"><span style="width:${Math.min(100, (shop.healthScore / maxHealth) * 100)}%"></span></span>
-          </td>
-          <td>${escapeHtml(shop.topCallType)}</td>
-          <td><span class="pill ${riskClass}">${shop.risk}</span></td>
-        </tr>`;
-      }).join("");
+      els.monthChart.innerHTML = rows.map(row => `<div class="month-row">
+        <div class="month-label">${escapeHtml(monthLabel(row.month))}</div>
+        <div class="month-bars" aria-hidden="true">
+          <div class="month-track"><div class="month-fill" style="width:${row.cars ? Math.max(2, (row.cars / maxCars) * 100) : 0}%"></div></div>
+          <div class="month-track"><div class="month-fill review" style="width:${row.reviews ? Math.max(2, (row.reviews / maxReviews) * 100) : 0}%"></div></div>
+          <div class="month-track"><div class="month-fill appointment" style="width:${row.appointments ? Math.max(2, (row.appointments / maxAppointments) * 100) : 0}%"></div></div>
+        </div>
+        <div class="month-counts">${row.cars} C | ${row.reviews} R | ${row.appointments} A</div>
+      </div>`).join("");
     }
 
-    function renderInsights() {
-      const shops = state.filtered;
-      if (!shops.length) {
-        els.insightList.innerHTML = `<div class="empty">No shops match the current filters.</div>`;
+    function renderTable() {
+      const rows = monthlyRows(selectedDetailRecords()).slice().reverse();
+      if (!rows.length) {
+        els.shopRows.innerHTML = `<tr><td colspan="8" class="empty">No monthly data available.</td></tr>`;
         return;
       }
 
-      const totalAppointments = shops.reduce((sum, shop) => sum + shop.appointments, 0);
-      const attention = shops.filter(shop => shop.risk !== "Low").length;
-      const rollingCars = shops.reduce((sum, shop) => sum + shop.rolling12AvgCars, 0);
-      const monthCount = Object.keys(state.monthLabels).length;
-      const bestReview = shops
-        .filter(shop => shop.reviewAvg)
-        .sort((a, b) => b.reviewAvg - a.reviewAvg || b.reviewRows - a.reviewRows)[0];
-      const weakestReview = shops
-        .filter(shop => shop.reviewAvg)
-        .sort((a, b) => a.reviewAvg - b.reviewAvg || b.reviewRows - a.reviewRows)[0];
-
-      const items = [
-        {
-          label: "Unique appointments",
-          note: "deduped by appointment ID or customer/date",
-          value: totalAppointments.toLocaleString()
-        },
-        {
-          label: "Needs attention",
-          note: "low sentiment or low activity",
-          value: attention.toLocaleString()
-        },
-        {
-          label: "Available months",
-          note: state.latestMonth ? `latest: ${monthLabel(state.latestMonth)}` : "no month detected",
-          value: monthCount.toLocaleString()
-        },
-        {
-          label: "12 mo avg cars",
-          note: "rolling monthly car count",
-          value: rollingCars.toFixed(1)
-        },
-        {
-          label: "Best review average",
-          note: bestReview ? bestReview.shop : "no review scores",
-          value: bestReview ? bestReview.reviewAvg.toFixed(1) : "N/A"
-        },
-        {
-          label: "Lowest review average",
-          note: weakestReview ? weakestReview.shop : "no review scores",
-          value: weakestReview ? weakestReview.reviewAvg.toFixed(1) : "N/A"
-        }
-      ];
-
-      els.insightList.innerHTML = items.map(item => `<div class="insight-item">
-        <div>
-          <strong>${escapeHtml(item.label)}</strong>
-          <span>${escapeHtml(item.note)}</span>
-        </div>
-        <div class="insight-value">${escapeHtml(item.value)}</div>
-      </div>`).join("");
+      els.shopRows.innerHTML = rows.map(row => {
+        return `<tr>
+          <td><strong>${escapeHtml(monthLabel(row.month))}</strong></td>
+          <td>${row.cars.toLocaleString()}</td>
+          <td>${row.rollingCars.toFixed(1)}</td>
+          <td>${row.sentimentAvg != null ? `${Math.round(row.sentimentAvg)}%` : "N/A"}</td>
+          <td>${row.rollingSentiment != null ? `${Math.round(row.rollingSentiment)}%` : "N/A"}</td>
+          <td>${row.reviews.toLocaleString()}</td>
+          <td>${row.appointments.toLocaleString()}</td>
+          <td>${row.reviewAvg != null ? row.reviewAvg.toFixed(1) : "N/A"}</td>
+        </tr>`;
+      }).join("");
     }
 
     function escapeHtml(value) {
@@ -1467,7 +1616,15 @@
       window.setInterval(refreshConfiguredSheet, refreshMs);
     });
 
-    [els.shopSelect, els.search, els.sortBy, els.sortDir].forEach(control => {
+    els.shopSelect.addEventListener("change", () => {
+      if (els.shopSelect.value !== "all") {
+        showView("detail");
+      } else {
+        render();
+      }
+    });
+
+    [els.search, els.sortBy, els.sortDir].forEach(control => {
       control.addEventListener("input", render);
       control.addEventListener("change", render);
     });
@@ -1487,12 +1644,7 @@
 
     document.querySelectorAll(".tab-btn").forEach(button => {
       button.addEventListener("click", () => {
-        const showFront = button.dataset.view === "front";
-        els.frontView.hidden = !showFront;
-        els.detailView.hidden = showFront;
-        els.frontTab.classList.toggle("active", showFront);
-        els.detailTab.classList.toggle("active", !showFront);
-        render();
+        showView(button.dataset.view);
       });
     });
   </script>
