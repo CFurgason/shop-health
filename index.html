@@ -401,6 +401,92 @@
       white-space: nowrap;
     }
 
+    .graph-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .kpi-graph {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .kpi-graph-body {
+      padding: 14px;
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 150px;
+      display: block;
+    }
+
+    .sparkline path.line {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .sparkline path.area {
+      fill: rgba(21, 84, 161, 0.1);
+    }
+
+    .sparkline circle {
+      fill: var(--yellow);
+      stroke: var(--accent-strong);
+      stroke-width: 1.5;
+    }
+
+    .bar-chart {
+      height: 150px;
+      display: grid;
+      grid-template-columns: repeat(12, minmax(10px, 1fr));
+      gap: 6px;
+      align-items: end;
+    }
+
+    .bar-col {
+      min-width: 0;
+      display: grid;
+      gap: 6px;
+      justify-items: center;
+    }
+
+    .bar-mark {
+      width: 100%;
+      min-height: 2px;
+      border-radius: 5px 5px 2px 2px;
+      background: var(--accent);
+    }
+
+    .bar-mark.yellow {
+      background: var(--yellow);
+    }
+
+    .bar-mark.green {
+      background: #0f766e;
+    }
+
+    .bar-label {
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .graph-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
     .layout {
       display: grid;
       gap: 14px;
@@ -809,16 +895,12 @@
               <div class="empty">Latest month reviews will appear here after data loads.</div>
             </div>
           </section>
+        </section>
 
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Last 12 Months</h2>
-              <div class="status">Cars | Reviews | Appointments</div>
-            </div>
-            <div id="monthChart" class="month-chart">
-              <div class="empty">No data loaded.</div>
-            </div>
-          </section>
+        <section id="monthChart" class="graph-grid" aria-label="Monthly KPI graphs">
+          <div class="panel">
+            <div class="empty">No data loaded.</div>
+          </div>
         </section>
 
         <section class="layout">
@@ -1531,24 +1613,94 @@
 
     function renderMonthChart() {
       const rows = monthlyRows(selectedDetailRecords());
-      const maxCars = Math.max(1, ...rows.map(row => row.cars));
-      const maxReviews = Math.max(1, ...rows.map(row => row.reviews));
-      const maxAppointments = Math.max(1, ...rows.map(row => row.appointments));
-
       if (!rows.length) {
-        els.monthChart.innerHTML = `<div class="empty">No monthly data available.</div>`;
+        els.monthChart.innerHTML = `<div class="panel"><div class="empty">No monthly data available.</div></div>`;
         return;
       }
 
-      els.monthChart.innerHTML = rows.map(row => `<div class="month-row">
-        <div class="month-label">${escapeHtml(monthLabel(row.month))}</div>
-        <div class="month-bars" aria-hidden="true">
-          <div class="month-track"><div class="month-fill" style="width:${row.cars ? Math.max(2, (row.cars / maxCars) * 100) : 0}%"></div></div>
-          <div class="month-track"><div class="month-fill review" style="width:${row.reviews ? Math.max(2, (row.reviews / maxReviews) * 100) : 0}%"></div></div>
-          <div class="month-track"><div class="month-fill appointment" style="width:${row.appointments ? Math.max(2, (row.appointments / maxAppointments) * 100) : 0}%"></div></div>
+      const graphs = [
+        { title: "Car Count", type: "bar", color: "", values: rows.map(row => row.cars), format: value => value.toLocaleString() },
+        { title: "Rolling Car Avg", type: "line", values: rows.map(row => row.rollingCars), format: value => value.toFixed(1) },
+        { title: "Sentiment", type: "line", values: rows.map(row => row.sentimentAvg), format: value => `${Math.round(value)}%` },
+        { title: "Rolling Sentiment", type: "line", values: rows.map(row => row.rollingSentiment), format: value => `${Math.round(value)}%` },
+        { title: "Reviews", type: "bar", color: "yellow", values: rows.map(row => row.reviews), format: value => value.toLocaleString() },
+        { title: "Appointments", type: "bar", color: "green", values: rows.map(row => row.appointments), format: value => value.toLocaleString() },
+        { title: "Avg Review", type: "line", values: rows.map(row => row.reviewAvg), format: value => value.toFixed(1) }
+      ];
+
+      els.monthChart.innerHTML = graphs.map(graph => renderKpiGraph(graph, rows)).join("");
+    }
+
+    function renderKpiGraph(graph, rows) {
+      const cleanValues = graph.values.map(value => value == null ? null : Number(value));
+      const numericValues = cleanValues.filter(value => Number.isFinite(value));
+      const latest = [...numericValues].reverse()[0];
+      const note = latest == null ? "No data" : `Latest: ${graph.format(latest)}`;
+
+      return `<section class="kpi-graph">
+        <div class="panel-head">
+          <h2>${escapeHtml(graph.title)}</h2>
+          <div class="status">Last 12 months</div>
         </div>
-        <div class="month-counts">${row.cars} C | ${row.reviews} R | ${row.appointments} A</div>
-      </div>`).join("");
+        <div class="kpi-graph-body">
+          ${graph.type === "bar" ? renderBarGraph(cleanValues, rows, graph.color || "") : renderLineGraph(cleanValues)}
+          <div class="graph-note">${escapeHtml(note)}</div>
+        </div>
+      </section>`;
+    }
+
+    function renderBarGraph(values, rows, colorClass) {
+      const max = Math.max(1, ...values.map(value => value || 0));
+      return `<div class="bar-chart">${values.map((value, index) => {
+        const height = value ? Math.max(3, (value / max) * 100) : 2;
+        const label = monthLabel(rows[index].month).slice(0, 3);
+        return `<div class="bar-col" title="${escapeHtml(monthLabel(rows[index].month))}: ${value || 0}">
+          <div class="bar-mark ${colorClass}" style="height:${height}%"></div>
+          <div class="bar-label">${escapeHtml(label)}</div>
+        </div>`;
+      }).join("")}</div>`;
+    }
+
+    function renderLineGraph(values) {
+      const width = 320;
+      const height = 150;
+      const pad = 14;
+      const numeric = values.filter(value => Number.isFinite(value));
+      if (!numeric.length) return `<div class="empty">No monthly data available.</div>`;
+
+      const min = Math.min(...numeric);
+      const max = Math.max(...numeric);
+      const range = max - min || 1;
+      const step = (width - pad * 2) / Math.max(1, values.length - 1);
+      const points = values.map((value, index) => {
+        if (!Number.isFinite(value)) return null;
+        const x = pad + index * step;
+        const y = height - pad - ((value - min) / range) * (height - pad * 2);
+        return { x, y };
+      });
+      const segments = [];
+      let current = [];
+      for (const point of points) {
+        if (point) {
+          current.push(point);
+        } else if (current.length) {
+          segments.push(current);
+          current = [];
+        }
+      }
+      if (current.length) segments.push(current);
+
+      const paths = segments.map(segment => segment.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" "));
+      const area = segments.length === 1
+        ? `${paths[0]} L ${segments[0][segments[0].length - 1].x.toFixed(1)} ${height - pad} L ${segments[0][0].x.toFixed(1)} ${height - pad} Z`
+        : "";
+      const circles = points.filter(Boolean).map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"></circle>`).join("");
+
+      return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Line graph">
+        ${area ? `<path class="area" d="${area}"></path>` : ""}
+        ${paths.map(path => `<path class="line" d="${path}"></path>`).join("")}
+        ${circles}
+      </svg>`;
     }
 
     function renderTable() {
