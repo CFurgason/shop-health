@@ -77,6 +77,10 @@
       max-width: 760px;
     }
 
+    .sheet-url {
+      width: min(420px, 100%);
+    }
+
     .input,
     .select {
       height: 38px;
@@ -292,7 +296,7 @@
 
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
       gap: 12px;
       margin-bottom: 16px;
     }
@@ -326,9 +330,16 @@
       min-height: 20px;
     }
 
+    .insight-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 360px;
       gap: 14px;
       align-items: start;
     }
@@ -457,6 +468,78 @@
       background: var(--accent);
     }
 
+    .review-chart {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .review-row {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr) 56px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .review-label {
+      color: var(--muted);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .review-track {
+      height: 18px;
+      border-radius: 6px;
+      background: var(--soft);
+      overflow: hidden;
+    }
+
+    .review-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+      min-width: 0;
+    }
+
+    .review-count {
+      text-align: right;
+      font-weight: 800;
+    }
+
+    .insight-list {
+      padding: 8px 14px 14px;
+    }
+
+    .insight-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .insight-item:last-child {
+      border-bottom: 0;
+    }
+
+    .insight-item strong,
+    .insight-item span {
+      display: block;
+    }
+
+    .insight-item span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .insight-value {
+      color: var(--accent);
+      font-weight: 900;
+      text-align: right;
+      white-space: nowrap;
+    }
+
     .side {
       display: grid;
       gap: 14px;
@@ -509,6 +592,7 @@
 
     @media (max-width: 1120px) {
       .header-inner,
+      .insight-grid,
       .layout,
       .controls {
         grid-template-columns: 1fr;
@@ -563,6 +647,8 @@
           <p class="subtitle">Car count, shop sentiment, duplicate-aware appointments, and shop ranking.</p>
         </div>
         <div class="source-bar" aria-label="Data source controls">
+          <input id="sheetUrl" class="input sheet-url" type="url" placeholder="Google Sheet CSV or share URL">
+          <button id="saveSheetUrl" class="btn secondary" type="button">Save URL</button>
           <button id="refreshSheet" class="btn" type="button">Refresh Sheet</button>
           <button id="loadSample" class="btn secondary" type="button">Sample Data</button>
         </div>
@@ -596,6 +682,7 @@
             <option value="carCount">Car Count</option>
             <option value="sentimentScore">Sentiment Score</option>
             <option value="appointments">Appointments</option>
+            <option value="reviewAvg">Avg Review</option>
             <option value="healthScore">Health Score</option>
           </select>
         </div>
@@ -646,15 +733,31 @@
             <div class="note">column I shop sentiment</div>
           </article>
           <article class="kpi">
-            <div class="label">Unique Appointments</div>
-            <div id="kpiAppointments" class="value">0</div>
-            <div id="appointmentNote" class="note">auto-detected when present</div>
+            <div class="label">Avg Review</div>
+            <div id="kpiReview" class="value">N/A</div>
+            <div class="note">column Q review score</div>
           </article>
-          <article class="kpi">
-            <div class="label">Needs Attention</div>
-            <div id="kpiAttention" class="value">0</div>
-            <div class="note">low sentiment or low activity</div>
-          </article>
+        </section>
+
+        <section class="insight-grid" aria-label="Shop insights">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Review Distribution</h2>
+              <div id="reviewStatus" class="status">No review data loaded.</div>
+            </div>
+            <div id="reviewChart" class="review-chart">
+              <div class="empty">Column Q reviews will appear here after data loads.</div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Filtered Snapshot</h2>
+            </div>
+            <div id="insightList" class="insight-list">
+              <div class="empty">No data loaded.</div>
+            </div>
+          </section>
         </section>
 
         <section class="layout">
@@ -672,6 +775,7 @@
                   <th data-sort="carCount">Car Count</th>
                   <th data-sort="sentimentScore">Sentiment</th>
                   <th data-sort="appointments">Appointments</th>
+                  <th data-sort="reviewAvg">Avg Review</th>
                   <th data-sort="healthScore">Health</th>
                   <th>Top Call Type</th>
                   <th>Risk</th>
@@ -679,40 +783,16 @@
               </thead>
               <tbody id="shopRows">
                 <tr>
-                  <td colspan="8" class="empty">Add your Google Sheet URL in the dashboard settings, then refresh the page.</td>
+                  <td colspan="9" class="empty">Add your Google Sheet URL in the dashboard settings, then refresh the page.</td>
                 </tr>
               </tbody>
             </table>
           </div>
           </section>
-
-          <aside class="side">
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Top Shops</h2>
-            </div>
-            <div id="topShops" class="list">
-              <div class="empty">No data loaded.</div>
-            </div>
-          </section>
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Watch List</h2>
-            </div>
-            <div id="watchList" class="list">
-              <div class="empty">No data loaded.</div>
-            </div>
-          </section>
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Column Detection</h2>
-            </div>
-            <div id="columnHelp" class="help">
-              Required: column <code>I</code> for sentiment and column <code>O</code> for next-day call type.
-            </div>
-          </section>
-          </aside>
         </section>
+        <div id="columnHelp" class="help">
+          Required: column <code>I</code> for sentiment, column <code>O</code> for next-day call type, and column <code>Q</code> for reviews.
+        </div>
       </section>
     </main>
   </div>
@@ -727,22 +807,23 @@
 
     const DASHBOARD_SETTINGS = {
       googleSheetUrl: "https://docs.google.com/spreadsheets/d/1lmSyCCP0RnOhU2CWJv9LzfAaHe7R_y4D56Vr3CAJ3YA/edit?gid=0#gid=0",
+      storageKey: "shopHealthGoogleSheetUrl",
       refreshMinutes: 15
     };
 
-    const SAMPLE_CSV = `Shop,City,State,Advisor,Customer,Phone,Vehicle,VIN,Shop Sentiment,Appt Date,Appointment ID,Status,Repair Order,Notes,Call Type
-Austin North,Austin,TX,Jill Adams,River Lee,5125550101,Civic,2HGFA16587H000001,Positive,2026-05-27,A-1001,Scheduled,RO-8401,,Next Day Satisfaction
-Austin North,Austin,TX,Jill Adams,River Lee,5125550101,Civic,2HGFA16587H000001,Positive,2026-05-27,A-1001,Scheduled,RO-8401,,Next Day Satisfaction
-Austin North,Austin,TX,Mark Hill,Paula King,5125550102,Accord,1HGCM82633A000002,Neutral,2026-05-28,A-1002,Scheduled,RO-8402,,Welcome New Vehicle
-Dallas Central,Dallas,TX,Nia Cruz,Chris Ford,2145550122,RAV4,JTMBFREV3HJ000003,Negative,,,,RO-9102,,Returning Lost Vehicle
-Dallas Central,Dallas,TX,Nia Cruz,Mia Lane,2145550125,Camry,4T1BF1FK0HU000004,Neutral,2026-05-29,A-1021,Scheduled,RO-9108,,Next Day Satisfaction
-Denver West,Denver,CO,Noah Stone,Asha Patel,3035550110,F-150,1FTFW1EF1EFA00005,Positive,2026-05-27,A-1200,Scheduled,RO-3188,,Welcome New Customer
-Denver West,Denver,CO,Noah Stone,Evan Brooks,3035550111,Escape,1FMCU0G92HUA00006,Positive,,,,RO-3190,,Next Day Satisfaction
-Denver West,Denver,CO,Noah Stone,Lena Cruz,3035550112,Elantra,5NPD84LF3HH000007,Positive,2026-05-30,A-1202,Scheduled,RO-3194,,Next Day Satisfaction
-Phoenix East,Phoenix,AZ,Amy Voss,Neil Shah,6025550188,Altima,1N4AL3AP0HC000008,Negative,,,,RO-7780,,Welcome New Customer
-Phoenix East,Phoenix,AZ,Amy Voss,Omar Davis,6025550189,Outback,4S4BSANC5H3000009,Negative,,,,RO-7781,,Returning Lost Vehicle
-Portland South,Portland,OR,Luis Vega,Iris Moon,5035550120,CR-V,7FARW2H83JE000010,Neutral,2026-05-28,A-1401,Scheduled,RO-6501,,Next Day Satisfaction
-Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM000011,Positive,2026-05-31,A-1402,Scheduled,RO-6502,,Welcome New Vehicle`;
+    const SAMPLE_CSV = `Shop,City,State,Advisor,Customer,Phone,Vehicle,VIN,Shop Sentiment,Appt Date,Appointment ID,Status,Repair Order,Notes,Call Type,Survey,Review
+Austin North,Austin,TX,Jill Adams,River Lee,5125550101,Civic,2HGFA16587H000001,Positive,2026-05-27,A-1001,Scheduled,RO-8401,,Next Day Satisfaction,Complete,5 - Excellent
+Austin North,Austin,TX,Jill Adams,River Lee,5125550101,Civic,2HGFA16587H000001,Positive,2026-05-27,A-1001,Scheduled,RO-8401,,Next Day Satisfaction,Complete,5
+Austin North,Austin,TX,Mark Hill,Paula King,5125550102,Accord,1HGCM82633A000002,Neutral,2026-05-28,A-1002,Scheduled,RO-8402,,Welcome New Vehicle,Complete,4 - Good
+Dallas Central,Dallas,TX,Nia Cruz,Chris Ford,2145550122,RAV4,JTMBFREV3HJ000003,Negative,,,,RO-9102,,Returning Lost Vehicle,Complete,2 - Poor
+Dallas Central,Dallas,TX,Nia Cruz,Mia Lane,2145550125,Camry,4T1BF1FK0HU000004,Neutral,2026-05-29,A-1021,Scheduled,RO-9108,,Next Day Satisfaction,Complete,3 - Average
+Denver West,Denver,CO,Noah Stone,Asha Patel,3035550110,F-150,1FTFW1EF1EFA00005,Positive,2026-05-27,A-1200,Scheduled,RO-3188,,Welcome New Customer,Complete,5 - Excellent
+Denver West,Denver,CO,Noah Stone,Evan Brooks,3035550111,Escape,1FMCU0G92HUA00006,Positive,,,,RO-3190,,Next Day Satisfaction,Complete,4
+Denver West,Denver,CO,Noah Stone,Lena Cruz,3035550112,Elantra,5NPD84LF3HH000007,Positive,2026-05-30,A-1202,Scheduled,RO-3194,,Next Day Satisfaction,Complete,5
+Phoenix East,Phoenix,AZ,Amy Voss,Neil Shah,6025550188,Altima,1N4AL3AP0HC000008,Negative,,,,RO-7780,,Welcome New Customer,Complete,1 - Very Poor
+Phoenix East,Phoenix,AZ,Amy Voss,Omar Davis,6025550189,Outback,4S4BSANC5H3000009,Negative,,,,RO-7781,,Returning Lost Vehicle,Complete,2
+Portland South,Portland,OR,Luis Vega,Iris Moon,5035550120,CR-V,7FARW2H83JE000010,Neutral,2026-05-28,A-1401,Scheduled,RO-6501,,Next Day Satisfaction,Complete,4 - Good
+Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM000011,Positive,2026-05-31,A-1402,Scheduled,RO-6502,,Welcome New Vehicle,Complete,5 - Excellent`;
 
     const state = {
       rows: [],
@@ -755,6 +836,8 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
 
     const els = {
       refreshSheet: document.getElementById("refreshSheet"),
+      saveSheetUrl: document.getElementById("saveSheetUrl"),
+      sheetUrl: document.getElementById("sheetUrl"),
       loadSample: document.getElementById("loadSample"),
       search: document.getElementById("search"),
       sentimentFilter: document.getElementById("sentimentFilter"),
@@ -769,15 +852,14 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       frontStatus: document.getElementById("frontStatus"),
       shopRows: document.getElementById("shopRows"),
       status: document.getElementById("status"),
-      topShops: document.getElementById("topShops"),
-      watchList: document.getElementById("watchList"),
+      reviewChart: document.getElementById("reviewChart"),
+      reviewStatus: document.getElementById("reviewStatus"),
+      insightList: document.getElementById("insightList"),
       columnHelp: document.getElementById("columnHelp"),
       kpiShops: document.getElementById("kpiShops"),
       kpiCars: document.getElementById("kpiCars"),
       kpiSentiment: document.getElementById("kpiSentiment"),
-      kpiAppointments: document.getElementById("kpiAppointments"),
-      kpiAttention: document.getElementById("kpiAttention"),
-      appointmentNote: document.getElementById("appointmentNote")
+      kpiReview: document.getElementById("kpiReview")
     };
 
     function parseCsv(text) {
@@ -841,7 +923,16 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       if (!trimmed) return "";
       if (trimmed.includes("output=csv") || trimmed.includes("tqx=out:csv")) return trimmed;
 
-      const gid = trimmed.match(/[?&]gid=(\d+)/)?.[1] || "0";
+      if (trimmed.includes("/pubhtml")) {
+        const csvUrl = trimmed.replace("/pubhtml", "/pub");
+        return csvUrl.includes("?") ? `${csvUrl}&output=csv` : `${csvUrl}?output=csv`;
+      }
+
+      if (trimmed.includes("/pub?")) {
+        return `${trimmed}&output=csv`;
+      }
+
+      const gid = trimmed.match(/[?&#]gid=(\d+)/)?.[1] || "0";
       const id = trimmed.match(/\/spreadsheets\/d\/([^/]+)/)?.[1];
       if (id) return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
       return trimmed;
@@ -881,6 +972,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
         state: findColumn(headers, ["State", "ST", "Region"], -1),
         sentiment: findColumn(headers, ["Shop Sentiment", "Sentiment"], 8),
         callType: findColumn(headers, ["Call Type", "Next Day Call", "Call Category", "Call Reason"], 14),
+        review: findColumn(headers, ["Review", "Review Score", "Rating", "Survey Score", "Customer Review"], 16),
         appointment: findColumn(headers, ["Appointment ID", "Appointment", "Appt ID", "Appointment Number", "Confirmation"], -1),
         appointmentDate: findColumn(headers, ["Appointment Date", "Appt Date", "Scheduled Date", "Schedule Date"], -1),
         customer: findColumn(headers, ["Customer", "Customer Name", "Client"], -1),
@@ -894,6 +986,11 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
 
     function get(row, index) {
       return index >= 0 ? normalize(row[index]) : "";
+    }
+
+    function reviewScore(value) {
+      const match = normalize(value).match(/[1-5]/);
+      return match ? Number(match[0]) : null;
     }
 
     function appointmentKey(row, columns) {
@@ -937,6 +1034,9 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
             sentimentTotal: 0,
             sentimentRows: 0,
             sentimentBuckets: { positive: 0, neutral: 0, negative: 0 },
+            reviewTotal: 0,
+            reviewRows: 0,
+            reviewBuckets: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
             callTypes: {},
             appointmentKeys: new Set()
           });
@@ -958,6 +1058,13 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
           shop.sentimentBuckets[sentiment.bucket] += 1;
         }
 
+        const review = reviewScore(get(row, columns.review));
+        if (review) {
+          shop.reviewTotal += review;
+          shop.reviewRows += 1;
+          shop.reviewBuckets[review] += 1;
+        }
+
         const apptKey = appointmentKey(row, columns);
         if (apptKey) shop.appointmentKeys.add(apptKey);
       }
@@ -968,6 +1075,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       state.shops = Array.from(grouped.values()).map(shop => {
         const hasSentiment = shop.sentimentRows > 0;
         const sentimentScore = hasSentiment ? shop.sentimentTotal / shop.sentimentRows : null;
+        const reviewAvg = shop.reviewRows ? shop.reviewTotal / shop.reviewRows : null;
         const appointments = shop.appointmentKeys.size;
         const activityScore = (shop.carCount / maxCars) * 45;
         const appointmentScore = (appointments / maxAppointments) * 15;
@@ -987,6 +1095,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
           appointments,
           hasSentiment,
           sentimentScore,
+          reviewAvg,
           healthScore,
           topCallType,
           risk
@@ -1006,14 +1115,12 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
 
     function updateColumnHelp(headers, columns) {
       const appointmentDetected = columns.appointment >= 0 || columns.appointmentDate >= 0;
-      els.appointmentNote.textContent = appointmentDetected
-        ? "deduped by appointment ID or customer/date"
-        : "no appointment column detected";
 
       const parts = [
         `Shop: ${headers[columns.shop] || "column A"}`,
         `Sentiment: ${headers[columns.sentiment] || "column I"}`,
         `Next-day calls: ${headers[columns.callType] || "column O"}`,
+        `Reviews: ${headers[columns.review] || "column Q"}`,
         `Appointments: ${appointmentDetected ? (headers[columns.appointment] || headers[columns.appointmentDate]) : "not detected"}`
       ];
       els.columnHelp.innerHTML = parts.map(part => `<div>${escapeHtml(part)}</div>`).join("");
@@ -1046,8 +1153,9 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       applyFilters();
       renderScoreCards();
       renderKpis();
+      renderReviewChart();
       renderTable();
-      renderLists();
+      renderInsights();
     }
 
     function renderScoreCards() {
@@ -1095,23 +1203,58 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
     function renderKpis() {
       const shops = state.filtered;
       const totalCars = shops.reduce((sum, shop) => sum + shop.carCount, 0);
-      const totalAppointments = shops.reduce((sum, shop) => sum + shop.appointments, 0);
       const shopsWithSentiment = shops.filter(shop => shop.hasSentiment);
       const avgSentiment = shopsWithSentiment.length
         ? shopsWithSentiment.reduce((sum, shop) => sum + shop.sentimentScore, 0) / shopsWithSentiment.length
         : 0;
-      const attention = shops.filter(shop => shop.risk !== "Low").length;
+      const reviewRows = shops.reduce((sum, shop) => sum + shop.reviewRows, 0);
+      const reviewTotal = shops.reduce((sum, shop) => sum + shop.reviewTotal, 0);
 
       els.kpiShops.textContent = shops.length.toLocaleString();
       els.kpiCars.textContent = totalCars.toLocaleString();
       els.kpiSentiment.textContent = shopsWithSentiment.length ? `${Math.round(avgSentiment)}%` : "N/A";
-      els.kpiAppointments.textContent = totalAppointments.toLocaleString();
-      els.kpiAttention.textContent = attention.toLocaleString();
+      els.kpiReview.textContent = reviewRows ? (reviewTotal / reviewRows).toFixed(1) : "N/A";
+    }
+
+    function reviewDistribution(shops) {
+      return shops.reduce((buckets, shop) => {
+        for (let score = 1; score <= 5; score += 1) {
+          buckets[score] += shop.reviewBuckets[score] || 0;
+        }
+        return buckets;
+      }, { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
+    }
+
+    function renderReviewChart() {
+      const buckets = reviewDistribution(state.filtered);
+      const total = Object.values(buckets).reduce((sum, count) => sum + count, 0);
+      const max = Math.max(1, ...Object.values(buckets));
+
+      els.reviewStatus.textContent = total
+        ? `${total.toLocaleString()} reviews in current filters.`
+        : "No review data in current filters.";
+
+      if (!total) {
+        els.reviewChart.innerHTML = `<div class="empty">No review scores found in column Q for the current filters.</div>`;
+        return;
+      }
+
+      els.reviewChart.innerHTML = [5, 4, 3, 2, 1].map(score => {
+        const count = buckets[score];
+        const width = count ? Math.max(2, (count / max) * 100) : 0;
+        return `<div class="review-row">
+          <div class="review-label">${score} star</div>
+          <div class="review-track" aria-hidden="true">
+            <div class="review-fill" style="width:${width}%"></div>
+          </div>
+          <div class="review-count">${count.toLocaleString()}</div>
+        </div>`;
+      }).join("");
     }
 
     function renderTable() {
       if (!state.filtered.length) {
-        els.shopRows.innerHTML = `<tr><td colspan="8" class="empty">No shops match the current filters.</td></tr>`;
+        els.shopRows.innerHTML = `<tr><td colspan="9" class="empty">No shops match the current filters.</td></tr>`;
         return;
       }
 
@@ -1130,6 +1273,7 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
           <td>${shop.carCount.toLocaleString()}</td>
           <td><span class="pill ${sentiment.className}">${sentiment.label}</span></td>
           <td>${shop.appointments.toLocaleString()}</td>
+          <td>${shop.reviewAvg ? shop.reviewAvg.toFixed(1) : "N/A"}</td>
           <td>
             <strong>${shop.healthScore}</strong>
             <span class="bar" aria-hidden="true"><span style="width:${Math.min(100, (shop.healthScore / maxHealth) * 100)}%"></span></span>
@@ -1140,26 +1284,52 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       }).join("");
     }
 
-    function renderLists() {
-      const top = [...state.shops].sort((a, b) => a.rank - b.rank).slice(0, 5);
-      const watch = [...state.shops]
-        .filter(shop => shop.risk !== "Low")
-        .sort((a, b) => a.healthScore - b.healthScore || a.carCount - b.carCount)
-        .slice(0, 5);
+    function renderInsights() {
+      const shops = state.filtered;
+      if (!shops.length) {
+        els.insightList.innerHTML = `<div class="empty">No shops match the current filters.</div>`;
+        return;
+      }
 
-      els.topShops.innerHTML = top.length ? top.map(shop => listRow(shop, `${shop.healthScore} health`)).join("") : `<div class="empty">No data loaded.</div>`;
-      els.watchList.innerHTML = watch.length ? watch.map(shop => listRow(shop, `${shop.risk} risk`)).join("") : `<div class="empty">No shops currently flagged.</div>`;
-    }
+      const totalAppointments = shops.reduce((sum, shop) => sum + shop.appointments, 0);
+      const attention = shops.filter(shop => shop.risk !== "Low").length;
+      const bestReview = shops
+        .filter(shop => shop.reviewAvg)
+        .sort((a, b) => b.reviewAvg - a.reviewAvg || b.reviewRows - a.reviewRows)[0];
+      const weakestReview = shops
+        .filter(shop => shop.reviewAvg)
+        .sort((a, b) => a.reviewAvg - b.reviewAvg || b.reviewRows - a.reviewRows)[0];
 
-    function listRow(shop, meta) {
-      return `<div class="list-row">
-        <div class="rank">#${shop.rank}</div>
+      const items = [
+        {
+          label: "Unique appointments",
+          note: "deduped by appointment ID or customer/date",
+          value: totalAppointments.toLocaleString()
+        },
+        {
+          label: "Needs attention",
+          note: "low sentiment or low activity",
+          value: attention.toLocaleString()
+        },
+        {
+          label: "Best review average",
+          note: bestReview ? bestReview.shop : "no review scores",
+          value: bestReview ? bestReview.reviewAvg.toFixed(1) : "N/A"
+        },
+        {
+          label: "Lowest review average",
+          note: weakestReview ? weakestReview.shop : "no review scores",
+          value: weakestReview ? weakestReview.reviewAvg.toFixed(1) : "N/A"
+        }
+      ];
+
+      els.insightList.innerHTML = items.map(item => `<div class="insight-item">
         <div>
-          <strong>${escapeHtml(shop.shop)}</strong>
-          <small>${shop.carCount.toLocaleString()} cars | ${shop.appointments.toLocaleString()} appointments</small>
+          <strong>${escapeHtml(item.label)}</strong>
+          <span>${escapeHtml(item.note)}</span>
         </div>
-        <small>${escapeHtml(meta)}</small>
-      </div>`;
+        <div class="insight-value">${escapeHtml(item.value)}</div>
+      </div>`).join("");
     }
 
     function escapeHtml(value) {
@@ -1177,16 +1347,42 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
       els.frontStatus.textContent = message;
     }
 
+    function configuredSheetUrl() {
+      return els.sheetUrl.value.trim() || DASHBOARD_SETTINGS.googleSheetUrl.trim();
+    }
+
+    function loadSavedSheetUrl() {
+      const savedUrl = window.localStorage.getItem(DASHBOARD_SETTINGS.storageKey) || DASHBOARD_SETTINGS.googleSheetUrl;
+      els.sheetUrl.value = savedUrl;
+    }
+
+    function saveSheetUrl() {
+      const url = els.sheetUrl.value.trim();
+      if (url) {
+        window.localStorage.setItem(DASHBOARD_SETTINGS.storageKey, url);
+        setStatus("Google Sheet URL saved. Refreshing sheet...");
+        refreshConfiguredSheet();
+      } else {
+        window.localStorage.removeItem(DASHBOARD_SETTINGS.storageKey);
+        setStatus("Google Sheet URL cleared.");
+      }
+    }
+
     async function loadConfiguredSheet() {
-      const url = convertSheetUrl(DASHBOARD_SETTINGS.googleSheetUrl);
+      const url = convertSheetUrl(configuredSheetUrl());
       if (!url) {
-        setStatus("Add your Google Sheet URL in DASHBOARD_SETTINGS.googleSheetUrl.");
+        setStatus("Paste your Google Sheet URL, save it, then refresh the sheet.");
         return;
       }
       setStatus("Loading sheet...");
-      const response = await fetch(url);
+      const cacheBustedUrl = `${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`;
+      const response = await fetch(cacheBustedUrl);
       if (!response.ok) throw new Error(`Could not load CSV: ${response.status} ${response.statusText}`);
-      processData(await response.text(), "Google Sheets");
+      const csvText = await response.text();
+      if (/^\s*<!doctype html/i.test(csvText) || /^\s*<html/i.test(csvText)) {
+        throw new Error("Google returned a web page instead of CSV. Publish the sheet as CSV or use a public CSV export link.");
+      }
+      processData(csvText, "Google Sheets");
     }
 
     function refreshConfiguredSheet() {
@@ -1196,8 +1392,13 @@ Portland South,Portland,OR,Luis Vega,Jay Moore,5035550121,Tacoma,3TMCZ5AN5HM0000
     }
 
     els.refreshSheet.addEventListener("click", refreshConfiguredSheet);
+    els.saveSheetUrl.addEventListener("click", saveSheetUrl);
+    els.sheetUrl.addEventListener("keydown", event => {
+      if (event.key === "Enter") saveSheetUrl();
+    });
 
     window.addEventListener("load", () => {
+      loadSavedSheetUrl();
       refreshConfiguredSheet();
       const refreshMs = Math.max(1, DASHBOARD_SETTINGS.refreshMinutes) * 60 * 1000;
       window.setInterval(refreshConfiguredSheet, refreshMs);
