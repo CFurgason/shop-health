@@ -380,9 +380,13 @@
 
     .graph-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(400px, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 16px;
+    }
+
+    #monthChart.graph-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .detail-score-kpi {
@@ -418,6 +422,7 @@
       box-shadow: var(--shadow);
       overflow: hidden;
       min-height: 280px;
+      min-width: 0;
     }
 
     .kpi-graph-body {
@@ -790,6 +795,10 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      #monthChart.graph-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -815,6 +824,10 @@
       }
 
       .graph-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #monthChart.graph-grid {
         grid-template-columns: 1fr;
       }
 
