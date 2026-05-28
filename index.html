@@ -1716,45 +1716,36 @@
       const width = 320;
       const height = 150;
       const pad = 24;
-      const numeric = values.filter(value => Number.isFinite(value));
+      const plotted = values
+        .map((value, index) => ({ value, row: rows[index] }))
+        .filter(point => Number.isFinite(point.value));
+      const numeric = plotted.map(point => point.value);
       if (!numeric.length) return `<div class="empty">No monthly data available.</div>`;
 
       const min = Math.min(...numeric);
       const max = Math.max(...numeric);
       const range = max - min || 1;
-      const step = (width - pad * 2) / Math.max(1, values.length - 1);
-      const points = values.map((value, index) => {
-        if (!Number.isFinite(value)) return null;
+      const step = (width - pad * 2) / Math.max(1, plotted.length - 1);
+      const points = plotted.map((point, index) => {
+        const value = point.value;
         const x = pad + index * step;
         const y = height - pad - ((value - min) / range) * (height - pad * 2);
-        return { x, y, value };
+        return { x, y, value, row: point.row };
       });
-      const segments = [];
-      let current = [];
-      for (const point of points) {
-        if (point) {
-          current.push(point);
-        } else if (current.length) {
-          segments.push(current);
-          current = [];
-        }
-      }
-      if (current.length) segments.push(current);
-
-      const paths = segments.map(segment => segment.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" "));
-      const area = segments.length === 1
-        ? `${paths[0]} L ${segments[0][segments[0].length - 1].x.toFixed(1)} ${height - pad} L ${segments[0][0].x.toFixed(1)} ${height - pad} Z`
+      const path = points.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+      const area = points.length > 1
+        ? `${path} L ${points[points.length - 1].x.toFixed(1)} ${height - pad} L ${points[0].x.toFixed(1)} ${height - pad} Z`
         : "";
-      const circles = points.filter(Boolean).map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"></circle>`).join("");
-      const labels = points.filter(Boolean).map(point => {
+      const circles = points.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"></circle>`).join("");
+      const labels = points.map(point => {
         const y = Math.max(10, point.y - 8);
         return `<text x="${point.x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle">${escapeHtml(format(point.value))}</text>`;
       }).join("");
-      const monthLabels = rows.map(row => `<span>${escapeHtml(monthLabel(row.month).slice(0, 3))}</span>`).join("");
+      const monthLabels = points.map(point => `<span>${escapeHtml(monthLabel(point.row.month).slice(0, 3))}</span>`).join("");
 
       return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Line graph">
         ${area ? `<path class="area" d="${area}"></path>` : ""}
-        ${paths.map(path => `<path class="line" d="${path}"></path>`).join("")}
+        <path class="line" d="${path}"></path>
         ${circles}
         ${labels}
       </svg>
