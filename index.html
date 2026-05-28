@@ -1736,20 +1736,24 @@
       const area = points.length > 1
         ? `${path} L ${points[points.length - 1].x.toFixed(1)} ${height - pad} L ${points[0].x.toFixed(1)} ${height - pad} Z`
         : "";
+      const lineElement = points.length > 1
+        ? `<path class="line" d="${path}"></path>`
+        : "";
       const circles = points.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3"></circle>`).join("");
       const labels = points.map(point => {
         const y = Math.max(10, point.y - 8);
         return `<text x="${point.x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle">${escapeHtml(format(point.value))}</text>`;
       }).join("");
       const monthLabels = points.map(point => `<span>${escapeHtml(monthLabel(point.row.month).slice(0, 3))}</span>`).join("");
+      const axisColumns = `repeat(${Math.max(1, points.length)}, minmax(10px, 1fr))`;
 
       return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" role="img" aria-label="Line graph">
         ${area ? `<path class="area" d="${area}"></path>` : ""}
-        <path class="line" d="${path}"></path>
+        ${lineElement}
         ${circles}
         ${labels}
       </svg>
-      <div class="line-axis">${monthLabels}</div>`;
+      <div class="line-axis" style="grid-template-columns:${axisColumns}">${monthLabels}</div>`;
     }
 
     function renderTable() {
