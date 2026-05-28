@@ -1676,11 +1676,12 @@
     }
 
     function renderKpiGraph(graph, rows) {
+      const hasRealNumber = value => value !== null && value !== "" && value !== undefined && Number.isFinite(Number(value));
       const graphRows = graph.type === "line"
-        ? rows.filter((row, index) => Number.isFinite(Number(graph.values[index])))
+        ? rows.filter((row, index) => hasRealNumber(graph.values[index]))
         : rows;
       const graphValues = graph.type === "line"
-        ? rows.map((row, index) => ({ row, value: graph.values[index] })).filter(point => Number.isFinite(Number(point.value))).map(point => point.value)
+        ? rows.map((row, index) => ({ row, value: graph.values[index] })).filter(point => hasRealNumber(point.value)).map(point => point.value)
         : graph.values;
       const cleanValues = graphValues.map(value => value == null ? null : Number(value));
       const numericValues = cleanValues.filter(value => Number.isFinite(value));
