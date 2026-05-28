@@ -322,32 +322,6 @@
       min-height: 20px;
     }
 
-    .insight-grid {
-      display: grid;
-      grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
-      gap: 14px;
-      align-items: start;
-      margin-bottom: 16px;
-    }
-
-    .detail-score {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 16px;
-      align-items: center;
-      padding: 14px;
-    }
-
-    .detail-score h2 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .detail-score p {
-      margin: 4px 0 0;
-      color: var(--muted);
-    }
-
     .month-chart {
       padding: 14px;
       display: grid;
@@ -403,9 +377,14 @@
 
     .graph-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
       margin-bottom: 16px;
+    }
+
+    .detail-score-card {
+      margin: 0;
+      min-height: 280px;
     }
 
     .kpi-graph {
@@ -414,6 +393,7 @@
       border-radius: 8px;
       box-shadow: var(--shadow);
       overflow: hidden;
+      min-height: 280px;
     }
 
     .kpi-graph-body {
@@ -422,7 +402,7 @@
 
     .sparkline {
       width: 100%;
-      height: 150px;
+      height: 170px;
       display: block;
     }
 
@@ -445,7 +425,7 @@
     }
 
     .bar-chart {
-      height: 150px;
+      height: 170px;
       display: grid;
       grid-template-columns: repeat(12, minmax(10px, 1fr));
       gap: 6px;
@@ -507,7 +487,7 @@
 
     .sparkline text {
       fill: var(--ink);
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 800;
     }
 
@@ -777,10 +757,13 @@
 
     @media (max-width: 1120px) {
       .header-inner,
-      .insight-grid,
       .layout,
       .controls {
         grid-template-columns: 1fr;
+      }
+
+      .graph-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .kpi-grid {
@@ -804,6 +787,10 @@
       }
 
       .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .graph-grid {
         grid-template-columns: 1fr;
       }
 
@@ -908,26 +895,6 @@
           </article>
         </section>
 
-        <section class="insight-grid" aria-label="Shop insights">
-          <section class="panel detail-score" aria-label="Selected shop score">
-            <div id="detailScore" class="score-value">0</div>
-            <div>
-              <h2 id="detailTitle">Shop Details</h2>
-              <p id="detailSubtitle">Select a shop to see all available months.</p>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Latest Month Reviews</h2>
-              <div id="reviewStatus" class="status">No review data loaded.</div>
-            </div>
-            <div id="reviewChart" class="review-chart">
-              <div class="empty">Latest month reviews will appear here after data loads.</div>
-            </div>
-          </section>
-        </section>
-
         <section id="monthChart" class="graph-grid" aria-label="Monthly KPI graphs">
           <div class="panel">
             <div class="empty">No data loaded.</div>
@@ -1009,13 +976,8 @@
       scoreCards: document.getElementById("scoreCards"),
       frontStatus: document.getElementById("frontStatus"),
       frontScope: document.getElementById("frontScope"),
-      detailScore: document.getElementById("detailScore"),
-      detailTitle: document.getElementById("detailTitle"),
-      detailSubtitle: document.getElementById("detailSubtitle"),
       shopRows: document.getElementById("shopRows"),
       status: document.getElementById("status"),
-      reviewChart: document.getElementById("reviewChart"),
-      reviewStatus: document.getElementById("reviewStatus"),
       monthChart: document.getElementById("monthChart"),
       columnHelp: document.getElementById("columnHelp"),
       kpiShops: document.getElementById("kpiShops"),
@@ -1520,9 +1482,7 @@
       state.sortDir = els.sortDir.value;
       applyFilters(visibleShops());
       renderScoreCards();
-      renderDetailScore();
       renderKpis();
-      renderReviewChart();
       renderMonthChart();
       renderTable();
     }
@@ -1582,21 +1542,53 @@
       }).join("");
     }
 
-    function renderDetailScore() {
+    function renderShopScoreGraph() {
       const shop = activeDetailShop();
       if (!shop) {
-        els.detailScore.textContent = "0";
-        els.detailScore.className = "score-value";
-        els.detailTitle.textContent = "All Shops";
-        els.detailSubtitle.textContent = "Select a shop to open a shop-specific detail page.";
-        return;
+        return `<article class="score-card detail-score-card">
+          <div class="score-card-head">
+            <div>
+              <h3>Shop Details</h3>
+              <div class="location">Select a shop to see its score.</div>
+            </div>
+            <div class="score-value">0</div>
+          </div>
+          <div class="empty">No shop selected.</div>
+        </article>`;
       }
 
+      const sentiment = shop.hasSentiment
+        ? sentimentInfo(shop.sentimentScore)
+        : { label: "No Sentiment", className: "warn" };
       const scoreClass = shop.healthScore >= 75 ? "good" : shop.healthScore >= 50 ? "warn" : "bad";
-      els.detailScore.textContent = shop.healthScore;
-      els.detailScore.className = `score-value ${scoreClass}`;
-      els.detailTitle.textContent = shop.shop;
-      els.detailSubtitle.textContent = `${[shop.city, shop.state].filter(Boolean).join(", ") || "All available months"} | ${Object.keys(state.monthLabels).length} months loaded`;
+      const riskClass = shop.risk === "Low" ? "good" : shop.risk === "Medium" ? "warn" : "bad";
+      return `<article class="score-card detail-score-card">
+        <div class="score-card-head">
+          <div>
+            <h3>${escapeHtml(shop.shop)}</h3>
+            <div class="location">${escapeHtml([shop.city, shop.state].filter(Boolean).join(", "))}</div>
+          </div>
+          <div class="score-value ${scoreClass}" aria-label="Shop score ${shop.healthScore}">${shop.healthScore}</div>
+        </div>
+        <div class="score-metrics">
+          <div class="mini-metric">
+            <strong>#${shop.rank}</strong>
+            <span>Rank</span>
+          </div>
+          <div class="mini-metric">
+            <strong>${shop.rolling12AvgCars.toFixed(1)}</strong>
+            <span>12 Mo Avg</span>
+          </div>
+          <div class="mini-metric">
+            <strong>${shop.hasSentiment ? `${Math.round(shop.sentimentScore)}%` : "N/A"}</strong>
+            <span>Sentiment</span>
+          </div>
+        </div>
+        <div class="score-foot">
+          <span class="pill ${sentiment.className}">${sentiment.label}</span>
+          <span class="pill ${riskClass}">${shop.risk} Risk</span>
+        </div>
+      </article>`;
     }
 
     function renderKpis() {
@@ -1615,33 +1607,33 @@
       els.kpiAppointments.textContent = avgAppointments.toFixed(1);
     }
 
-    function renderReviewChart() {
-      const rows = monthlyRows(selectedDetailRecords());
+    function renderLatestReviewGraph(rows) {
       const latest = rows.find(row => row.month === state.latestMonth) || rows[rows.length - 1];
       const buckets = latest?.reviewBuckets || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
       const total = Object.values(buckets).reduce((sum, count) => sum + count, 0);
       const max = Math.max(1, ...Object.values(buckets));
 
-      els.reviewStatus.textContent = total
-        ? `${total.toLocaleString()} reviews in ${monthLabel(latest.month)}.`
-        : "No latest-month review data.";
+      const body = total
+        ? [5, 4, 3, 2, 1].map(score => {
+          const count = buckets[score];
+          const width = count ? Math.max(2, (count / max) * 100) : 0;
+          return `<div class="review-row">
+            <div class="review-label">${score} star</div>
+            <div class="review-track" aria-hidden="true">
+              <div class="review-fill" style="width:${width}%"></div>
+            </div>
+            <div class="review-count">${count.toLocaleString()}</div>
+          </div>`;
+        }).join("")
+        : `<div class="empty">No 1-5 review scores found for the latest month.</div>`;
 
-      if (!total) {
-        els.reviewChart.innerHTML = `<div class="empty">No 1-5 review scores found for the latest month.</div>`;
-        return;
-      }
-
-      els.reviewChart.innerHTML = [5, 4, 3, 2, 1].map(score => {
-        const count = buckets[score];
-        const width = count ? Math.max(2, (count / max) * 100) : 0;
-        return `<div class="review-row">
-          <div class="review-label">${score} star</div>
-          <div class="review-track" aria-hidden="true">
-            <div class="review-fill" style="width:${width}%"></div>
-          </div>
-          <div class="review-count">${count.toLocaleString()}</div>
-        </div>`;
-      }).join("");
+      return `<section class="kpi-graph">
+        <div class="panel-head">
+          <h2>Latest Month Reviews</h2>
+          <div class="status">${total ? `${total.toLocaleString()} in ${monthLabel(latest.month)}` : "No review data"}</div>
+        </div>
+        <div class="review-chart">${body}</div>
+      </section>`;
     }
 
     function renderMonthChart() {
@@ -1661,7 +1653,11 @@
         { title: "Appointment Count", type: "bar", color: "green", values: rows.map(row => row.appointments), format: value => value.toLocaleString() }
       ];
 
-      els.monthChart.innerHTML = graphs.map(graph => renderKpiGraph(graph, rows)).join("");
+      els.monthChart.innerHTML = [
+        renderShopScoreGraph(),
+        renderLatestReviewGraph(rows),
+        ...graphs.map(graph => renderKpiGraph(graph, rows))
+      ].join("");
     }
 
     function renderKpiGraph(graph, rows) {
