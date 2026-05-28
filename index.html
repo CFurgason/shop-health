@@ -1676,7 +1676,13 @@
     }
 
     function renderKpiGraph(graph, rows) {
-      const cleanValues = graph.values.map(value => value == null ? null : Number(value));
+      const graphRows = graph.type === "line"
+        ? rows.filter((row, index) => Number.isFinite(Number(graph.values[index])))
+        : rows;
+      const graphValues = graph.type === "line"
+        ? rows.map((row, index) => ({ row, value: graph.values[index] })).filter(point => Number.isFinite(Number(point.value))).map(point => point.value)
+        : graph.values;
+      const cleanValues = graphValues.map(value => value == null ? null : Number(value));
       const numericValues = cleanValues.filter(value => Number.isFinite(value));
       const latest = [...numericValues].reverse()[0];
       const rollingNote = graph.rolling
@@ -1692,7 +1698,7 @@
           <div class="status">Last 12 months</div>
         </div>
         <div class="kpi-graph-body">
-          ${graph.type === "bar" ? renderBarGraph(cleanValues, rows, graph.color || "", graph.format) : renderLineGraph(cleanValues, rows, graph.format)}
+          ${graph.type === "bar" ? renderBarGraph(cleanValues, graphRows, graph.color || "", graph.format) : renderLineGraph(cleanValues, graphRows, graph.format)}
           <div class="graph-note">${escapeHtml(note)}</div>
         </div>
       </section>`;
@@ -1716,9 +1722,7 @@
       const width = 320;
       const height = 150;
       const pad = 24;
-      const plotted = values
-        .map((value, index) => ({ value, row: rows[index] }))
-        .filter(point => Number.isFinite(point.value));
+      const plotted = values.map((value, index) => ({ value, row: rows[index] }));
       const numeric = plotted.map(point => point.value);
       if (!numeric.length) return `<div class="empty">No monthly data available.</div>`;
 
