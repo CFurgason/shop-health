@@ -300,6 +300,9 @@
       padding: 14px;
       box-shadow: var(--shadow);
       min-height: 108px;
+      display: grid;
+      place-items: center;
+      text-align: center;
     }
 
     .kpi .label {
@@ -382,9 +385,30 @@
       margin-bottom: 16px;
     }
 
-    .detail-score-card {
+    .detail-score-kpi {
+      display: grid;
+      gap: 7px;
+      place-items: center;
+      text-align: center;
+    }
+
+    .detail-score-kpi .score-value {
+      width: 62px;
+      height: 62px;
+      font-size: 22px;
+      border-width: 6px;
+    }
+
+    .detail-score-kpi h3 {
       margin: 0;
-      min-height: 280px;
+      font-size: 14px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-score-kpi .location {
+      color: var(--muted);
+      font-size: 11px;
     }
 
     .kpi-graph {
@@ -868,6 +892,13 @@
 
       <section id="detailView" class="view" hidden>
         <section class="kpi-grid" aria-label="Key performance indicators">
+          <article id="detailScoreCard" class="kpi">
+            <div class="detail-score-kpi">
+              <div class="score-value">0</div>
+              <h3>Shop Score</h3>
+              <div class="location">Select a shop</div>
+            </div>
+          </article>
           <article class="kpi">
             <div class="label">Months</div>
             <div id="kpiShops" class="value">0</div>
@@ -976,6 +1007,7 @@
       scoreCards: document.getElementById("scoreCards"),
       frontStatus: document.getElementById("frontStatus"),
       frontScope: document.getElementById("frontScope"),
+      detailScoreCard: document.getElementById("detailScoreCard"),
       shopRows: document.getElementById("shopRows"),
       status: document.getElementById("status"),
       monthChart: document.getElementById("monthChart"),
@@ -1482,6 +1514,7 @@
       state.sortDir = els.sortDir.value;
       applyFilters(visibleShops());
       renderScoreCards();
+      renderShopScoreCard();
       renderKpis();
       renderMonthChart();
       renderTable();
@@ -1542,53 +1575,23 @@
       }).join("");
     }
 
-    function renderShopScoreGraph() {
+    function renderShopScoreCard() {
       const shop = activeDetailShop();
       if (!shop) {
-        return `<article class="score-card detail-score-card">
-          <div class="score-card-head">
-            <div>
-              <h3>Shop Details</h3>
-              <div class="location">Select a shop to see its score.</div>
-            </div>
-            <div class="score-value">0</div>
-          </div>
-          <div class="empty">No shop selected.</div>
-        </article>`;
+        els.detailScoreCard.innerHTML = `<div class="detail-score-kpi">
+          <div class="score-value">0</div>
+          <h3>Shop Score</h3>
+          <div class="location">Select a shop</div>
+        </div>`;
+        return;
       }
 
-      const sentiment = shop.hasSentiment
-        ? sentimentInfo(shop.sentimentScore)
-        : { label: "No Sentiment", className: "warn" };
       const scoreClass = shop.healthScore >= 75 ? "good" : shop.healthScore >= 50 ? "warn" : "bad";
-      const riskClass = shop.risk === "Low" ? "good" : shop.risk === "Medium" ? "warn" : "bad";
-      return `<article class="score-card detail-score-card">
-        <div class="score-card-head">
-          <div>
-            <h3>${escapeHtml(shop.shop)}</h3>
-            <div class="location">${escapeHtml([shop.city, shop.state].filter(Boolean).join(", "))}</div>
-          </div>
-          <div class="score-value ${scoreClass}" aria-label="Shop score ${shop.healthScore}">${shop.healthScore}</div>
-        </div>
-        <div class="score-metrics">
-          <div class="mini-metric">
-            <strong>#${shop.rank}</strong>
-            <span>Rank</span>
-          </div>
-          <div class="mini-metric">
-            <strong>${shop.rolling12AvgCars.toFixed(1)}</strong>
-            <span>12 Mo Avg</span>
-          </div>
-          <div class="mini-metric">
-            <strong>${shop.hasSentiment ? `${Math.round(shop.sentimentScore)}%` : "N/A"}</strong>
-            <span>Sentiment</span>
-          </div>
-        </div>
-        <div class="score-foot">
-          <span class="pill ${sentiment.className}">${sentiment.label}</span>
-          <span class="pill ${riskClass}">${shop.risk} Risk</span>
-        </div>
-      </article>`;
+      els.detailScoreCard.innerHTML = `<div class="detail-score-kpi">
+        <div class="score-value ${scoreClass}" aria-label="Shop score ${shop.healthScore}">${shop.healthScore}</div>
+        <h3>${escapeHtml(shop.shop)}</h3>
+        <div class="location">${escapeHtml([shop.city, shop.state].filter(Boolean).join(", ") || "Shop score")}</div>
+      </div>`;
     }
 
     function renderKpis() {
@@ -1645,16 +1648,15 @@
 
       const graphs = [
         { title: "Car Count", type: "bar", color: "", values: rows.map(row => row.cars), format: value => value.toLocaleString() },
-        { title: "Rolling Car Avg", type: "line", values: rows.map(row => row.rollingCars), format: value => value.toFixed(1) },
+        { title: "Rolling Car Avg", type: "line", rolling: true, values: rows.map(row => row.rollingCars), format: value => value.toFixed(1) },
         { title: "Avg Sentiment", type: "line", values: rows.map(row => row.sentimentAvg), format: value => `${Math.round(value)}%` },
-        { title: "Rolling Avg Sentiment", type: "line", values: rows.map(row => row.rollingSentiment), format: value => `${Math.round(value)}%` },
+        { title: "Rolling Avg Sentiment", type: "line", rolling: true, values: rows.map(row => row.rollingSentiment), format: value => `${Math.round(value)}%` },
         { title: "Review Count", type: "bar", color: "yellow", values: rows.map(row => row.reviews), format: value => value.toLocaleString() },
         { title: "Avg Review", type: "line", values: rows.map(row => row.reviewAvg), format: value => value.toFixed(1) },
         { title: "Appointment Count", type: "bar", color: "green", values: rows.map(row => row.appointments), format: value => value.toLocaleString() }
       ];
 
       els.monthChart.innerHTML = [
-        renderShopScoreGraph(),
         renderLatestReviewGraph(rows),
         ...graphs.map(graph => renderKpiGraph(graph, rows))
       ].join("");
@@ -1664,7 +1666,12 @@
       const cleanValues = graph.values.map(value => value == null ? null : Number(value));
       const numericValues = cleanValues.filter(value => Number.isFinite(value));
       const latest = [...numericValues].reverse()[0];
-      const note = latest == null ? "No data" : `Latest: ${graph.format(latest)}`;
+      const rollingNote = graph.rolling
+        ? "Rolling average uses the current month and up to the previous 11 months shown."
+        : "";
+      const note = latest == null
+        ? (rollingNote || "No data")
+        : `Latest: ${graph.format(latest)}${rollingNote ? ` | ${rollingNote}` : ""}`;
 
       return `<section class="kpi-graph">
         <div class="panel-head">
