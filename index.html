@@ -1164,7 +1164,7 @@
         sentiment: findColumn(headers, ["Shop Sentiment", "Sentiment"], 8),
         callType: findColumnExact(headers, ["Task Association"], 14),
         review: findColumn(headers, ["Review", "Review Score", "Rating", "Survey Score", "Customer Review"], 16),
-        appointment: findColumnExact(headers, ["Appointment ID", "Appt ID", "Appointment Id", "AppointmentID", "ApptID"], -1),
+        appointment: findColumnExact(headers, ["Appointment IDs", "Appointment ID", "Appt IDs", "Appt ID", "Appointment Id", "AppointmentID", "ApptID"], 10),
         appointmentDate: findColumn(headers, ["Appointment Date", "Appt Date", "Scheduled Date", "Schedule Date", "Date", "Call Date", "Created Date", "Completed Date"], -1),
         customer: findColumn(headers, ["Customer", "Customer Name", "Client"], -1),
         phone: findColumn(headers, ["Phone", "Phone Number", "Mobile"], -1),
@@ -1506,7 +1506,7 @@
         `Sentiment: ${headers[columns.sentiment] || "column I"}`,
         `Task Association: ${headers[columns.callType] || "column O"}`,
         `Reviews: ${headers[columns.review] || "column Q"}`,
-        `Appointment ID: ${columns.appointment >= 0 ? headers[columns.appointment] : "not detected"}`
+        `Appointment IDs: ${columns.appointment >= 0 ? (headers[columns.appointment] || "column K") : "not detected"}`
       ];
       els.columnHelp.innerHTML = parts.map(part => `<div>${escapeHtml(part)}</div>`).join("");
     }
