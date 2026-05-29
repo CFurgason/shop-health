@@ -933,9 +933,9 @@
             <div class="note">column Q review score</div>
           </article>
           <article class="kpi">
-            <div class="label">Avg Appointments</div>
+            <div class="label">12 Mo Avg Appointments</div>
             <div id="kpiAppointments" class="value">0</div>
-            <div class="note">monthly average, deduped</div>
+            <div class="note">deduped monthly average</div>
           </article>
         </section>
 
@@ -1609,15 +1609,18 @@
 
     function renderKpis() {
       const rows = monthlyRows(selectedDetailRecords());
+      const totalCars = rows.reduce((sum, row) => sum + row.cars, 0);
       const totalAppointments = rows.reduce((sum, row) => sum + row.appointments, 0);
       const reviewRows = rows.reduce((sum, row) => sum + row.reviews, 0);
       const reviewTotal = rows.reduce((sum, row) => sum + row.reviewTotal, 0);
       const latest = [...rows].reverse().find(row => row.cars || row.reviews || row.appointments || row.sentimentRows) || rows[rows.length - 1];
       const populatedMonths = rows.filter(row => state.monthLabels[row.month]).length;
-      const avgAppointments = totalAppointments / Math.max(1, populatedMonths);
+      const averageWindow = Math.max(1, rows.length);
+      const avgCars = totalCars / averageWindow;
+      const avgAppointments = totalAppointments / averageWindow;
 
       els.kpiShops.textContent = populatedMonths.toLocaleString();
-      els.kpiRollingCars.textContent = latest ? latest.rollingCars.toFixed(1) : "0.0";
+      els.kpiRollingCars.textContent = avgCars.toFixed(1);
       els.kpiSentiment.textContent = latest?.rollingSentiment != null ? `${Math.round(latest.rollingSentiment)}%` : "N/A";
       els.kpiReview.textContent = reviewRows ? (reviewTotal / reviewRows).toFixed(1) : "N/A";
       els.kpiAppointments.textContent = avgAppointments.toFixed(1);
