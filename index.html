@@ -180,8 +180,8 @@
 
     .score-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
       margin-bottom: 16px;
     }
 
@@ -802,6 +802,10 @@
       .kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      .score-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 620px) {
@@ -816,6 +820,10 @@
       }
 
       .score-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .score-grid {
         grid-template-columns: 1fr;
       }
 
@@ -1088,6 +1096,15 @@
       return fallbackIndex;
     }
 
+    function findColumnExact(headers, candidates, fallbackIndex) {
+      const normalized = headers.map(key);
+      for (const candidate of candidates) {
+        const index = normalized.indexOf(key(candidate));
+        if (index >= 0) return index;
+      }
+      return fallbackIndex;
+    }
+
     function convertSheetUrl(url) {
       const trimmed = url.trim();
       if (!trimmed) return "";
@@ -1117,8 +1134,11 @@
       if (text.includes("negative") || text.includes("unhappy") || text.includes("bad") || text.includes("poor")) {
         return { label: "Negative", className: "bad", score: 0, bucket: "negative", scorable: true };
       }
-      if (text.includes("neutral") || text.includes("mixed")) {
-        return { label: "Neutral", className: "warn", score: 50, bucket: "neutral", scorable: true };
+      if (text.includes("mixed")) {
+        return { label: "Mixed", className: "warn", score: 30, bucket: "mixed", scorable: true };
+      }
+      if (text.includes("neutral")) {
+        return { label: "Neutral", className: "warn", score: 60, bucket: "neutral", scorable: true };
       }
       const numeric = Number(text.replace("%", ""));
       if (!Number.isNaN(numeric)) {
@@ -1143,7 +1163,7 @@
         sentiment: findColumn(headers, ["Shop Sentiment", "Sentiment"], 8),
         callType: findColumn(headers, ["Call Type", "Next Day Call", "Call Category", "Call Reason"], 14),
         review: findColumn(headers, ["Review", "Review Score", "Rating", "Survey Score", "Customer Review"], 16),
-        appointment: findColumn(headers, ["Appointment ID", "Appointment", "Appt ID", "Appointment Number", "Confirmation"], -1),
+        appointment: findColumnExact(headers, ["Appointment ID", "Appt ID", "Appointment Number", "Confirmation", "Confirmation Number", "Appointment #", "Appt #"], -1),
         appointmentDate: findColumn(headers, ["Appointment Date", "Appt Date", "Scheduled Date", "Schedule Date", "Date", "Call Date", "Created Date", "Completed Date"], -1),
         customer: findColumn(headers, ["Customer", "Customer Name", "Client"], -1),
         phone: findColumn(headers, ["Phone", "Phone Number", "Mobile"], -1),
@@ -1213,8 +1233,7 @@
         get(row, columns.phone).replace(/\D/g, ""),
         get(row, columns.email).toLowerCase(),
         get(row, columns.vin).toLowerCase(),
-        get(row, columns.customer).toLowerCase(),
-        get(row, columns.vehicle).toLowerCase()
+        get(row, columns.customer).toLowerCase()
       ].filter(Boolean).join("|");
 
       return identity ? `fallback:${date.toLowerCase()}|${identity}` : "";
@@ -1235,7 +1254,7 @@
             carCount: 0,
             sentimentTotal: 0,
             sentimentRows: 0,
-            sentimentBuckets: { positive: 0, neutral: 0, negative: 0 },
+            sentimentBuckets: { positive: 0, neutral: 0, mixed: 0, negative: 0 },
             reviewTotal: 0,
             reviewRows: 0,
             reviewBuckets: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
@@ -1259,6 +1278,7 @@
         if (sentiment.scorable) {
           shop.sentimentTotal += sentiment.score;
           shop.sentimentRows += 1;
+          if (!(sentiment.bucket in shop.sentimentBuckets)) shop.sentimentBuckets[sentiment.bucket] = 0;
           shop.sentimentBuckets[sentiment.bucket] += 1;
         }
 
