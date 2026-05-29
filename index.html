@@ -1164,7 +1164,7 @@
         sentiment: findColumn(headers, ["Shop Sentiment", "Sentiment"], 8),
         callType: findColumnExact(headers, ["Task Association"], 14),
         review: findColumn(headers, ["Review", "Review Score", "Rating", "Survey Score", "Customer Review"], 16),
-        appointment: findColumnExact(headers, ["Appointment ID"], -1),
+        appointment: findColumnExact(headers, ["Appointment ID", "Appt ID", "Appointment Id", "AppointmentID", "ApptID"], -1),
         appointmentDate: findColumn(headers, ["Appointment Date", "Appt Date", "Scheduled Date", "Schedule Date", "Date", "Call Date", "Created Date", "Completed Date"], -1),
         customer: findColumn(headers, ["Customer", "Customer Name", "Client"], -1),
         phone: findColumn(headers, ["Phone", "Phone Number", "Mobile"], -1),
@@ -1501,14 +1501,12 @@
     }
 
     function updateColumnHelp(headers, columns) {
-      const appointmentDetected = columns.appointment >= 0 || columns.appointmentDate >= 0;
-
       const parts = [
         `Shop: ${headers[columns.shop] || "column A"}`,
         `Sentiment: ${headers[columns.sentiment] || "column I"}`,
         `Task Association: ${headers[columns.callType] || "column O"}`,
         `Reviews: ${headers[columns.review] || "column Q"}`,
-        `Appointments: ${appointmentDetected ? (headers[columns.appointment] || headers[columns.appointmentDate]) : "not detected"}`
+        `Appointment ID: ${columns.appointment >= 0 ? headers[columns.appointment] : "not detected"}`
       ];
       els.columnHelp.innerHTML = parts.map(part => `<div>${escapeHtml(part)}</div>`).join("");
     }
