@@ -1090,6 +1090,7 @@
       }
       for (const candidate of candidates) {
         const needle = key(candidate);
+        if (needle.length < 4) continue;
         const index = normalized.findIndex(header => header.includes(needle) || needle.includes(header));
         if (index >= 0) return index;
       }
@@ -1159,11 +1160,11 @@
       return {
         shop: findColumn(headers, ["Shop", "Shop Name", "Location", "Store", "Center"], 0),
         city: findColumn(headers, ["City", "Market"], -1),
-        state: findColumn(headers, ["State", "ST", "Region"], -1),
+        state: findColumnExact(headers, ["State", "ST", "Region"], -1),
         sentiment: findColumn(headers, ["Shop Sentiment", "Sentiment"], 8),
-        callType: findColumn(headers, ["Call Type", "Next Day Call", "Call Category", "Call Reason"], 14),
+        callType: findColumnExact(headers, ["Task Association"], 14),
         review: findColumn(headers, ["Review", "Review Score", "Rating", "Survey Score", "Customer Review"], 16),
-        appointment: findColumnExact(headers, ["Appointment ID", "Appt ID", "Appointment Number", "Confirmation", "Confirmation Number", "Appointment #", "Appt #"], -1),
+        appointment: findColumnExact(headers, ["Appointment ID"], -1),
         appointmentDate: findColumn(headers, ["Appointment Date", "Appt Date", "Scheduled Date", "Schedule Date", "Date", "Call Date", "Created Date", "Completed Date"], -1),
         customer: findColumn(headers, ["Customer", "Customer Name", "Client"], -1),
         phone: findColumn(headers, ["Phone", "Phone Number", "Mobile"], -1),
@@ -1224,19 +1225,7 @@
 
     function appointmentKey(row, columns) {
       const appointment = get(row, columns.appointment);
-      if (appointment) return `appt:${appointment.toLowerCase()}`;
-
-      const date = get(row, columns.appointmentDate);
-      if (!date) return "";
-
-      const identity = [
-        get(row, columns.phone).replace(/\D/g, ""),
-        get(row, columns.email).toLowerCase(),
-        get(row, columns.vin).toLowerCase(),
-        get(row, columns.customer).toLowerCase()
-      ].filter(Boolean).join("|");
-
-      return identity ? `fallback:${date.toLowerCase()}|${identity}` : "";
+      return appointment ? `appt:${appointment.toLowerCase()}` : "";
     }
 
     function buildShopSummaries(records, allRecords) {
@@ -1268,7 +1257,8 @@
         shop.rowCount += 1;
 
         const callType = get(row, columns.callType);
-        if (callTypeMatches(callType)) {
+        const isCarCountRow = callTypeMatches(callType);
+        if (isCarCountRow) {
           shop.carCount += 1;
           if (record.month) shop.monthCars[record.month] = (shop.monthCars[record.month] || 0) + 1;
           shop.callTypes[callType] = (shop.callTypes[callType] || 0) + 1;
@@ -1393,7 +1383,10 @@
         }
 
         const summary = grouped.get(record.month);
-        if (callTypeMatches(get(record.row, columns.callType))) summary.cars += 1;
+        const isCarCountRow = callTypeMatches(get(record.row, columns.callType));
+        if (isCarCountRow) {
+          summary.cars += 1;
+        }
 
         const sentiment = sentimentInfo(get(record.row, columns.sentiment));
         if (sentiment.scorable) {
@@ -1513,7 +1506,7 @@
       const parts = [
         `Shop: ${headers[columns.shop] || "column A"}`,
         `Sentiment: ${headers[columns.sentiment] || "column I"}`,
-        `Next-day calls: ${headers[columns.callType] || "column O"}`,
+        `Task Association: ${headers[columns.callType] || "column O"}`,
         `Reviews: ${headers[columns.review] || "column Q"}`,
         `Appointments: ${appointmentDetected ? (headers[columns.appointment] || headers[columns.appointmentDate]) : "not detected"}`
       ];
