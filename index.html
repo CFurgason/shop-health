@@ -446,50 +446,34 @@
     <section class="chart-grid">
       <section class="panel full">
         <div class="panel-head">
-          <h2>Revenue Trend</h2>
-          <div id="revenueLegend" class="legend"></div>
-        </div>
-        <div id="revenueChart" class="chart"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Conversion Funnel</h2>
-          <div class="legend">
-            <span><i class="swatch bar-calls"></i>Total Calls</span>
-            <span><i class="swatch bar-visits"></i>BDC Visits</span>
-            <span><i class="swatch bar-ro"></i>Effective RO Count</span>
-          </div>
-        </div>
-        <div id="funnelChart" class="chart short"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Customer Mix</h2>
-          <div class="legend">
-            <span><i class="swatch bar-new-customer"></i>New Customer</span>
-            <span><i class="swatch bar-new-vehicle"></i>New Vehicle</span>
-            <span><i class="swatch bar-returning"></i>Returning Lost</span>
-          </div>
-        </div>
-        <div id="customerChart" class="chart short"></div>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
           <h2>Sentiment Trend</h2>
           <div id="sentimentLegend" class="legend"></div>
         </div>
-        <div id="sentimentChart" class="chart short"></div>
+        <div id="sentimentChart" class="chart"></div>
       </section>
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Avg RO Ranking</h2>
-          <div class="subtle">Selected shops</div>
+          <h2>BDC Visits Trend</h2>
+          <div id="visitsLegend" class="legend"></div>
         </div>
-        <div id="rankingChart" class="chart short"></div>
+        <div id="visitsChart" class="chart short"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Monthly Growth %</h2>
+          <div id="growthLegend" class="legend"></div>
+        </div>
+        <div id="growthChart" class="chart short"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Call Volume Trend</h2>
+          <div id="callsLegend" class="legend"></div>
+        </div>
+        <div id="callsChart" class="chart short"></div>
       </section>
 
       <section class="panel full">
@@ -529,13 +513,14 @@
       compareToggle: document.getElementById("compareToggle"),
       themeToggle: document.getElementById("themeToggle"),
       scorecards: document.getElementById("scorecards"),
-      revenueChart: document.getElementById("revenueChart"),
-      revenueLegend: document.getElementById("revenueLegend"),
-      funnelChart: document.getElementById("funnelChart"),
-      customerChart: document.getElementById("customerChart"),
       sentimentChart: document.getElementById("sentimentChart"),
       sentimentLegend: document.getElementById("sentimentLegend"),
-      rankingChart: document.getElementById("rankingChart"),
+      visitsChart: document.getElementById("visitsChart"),
+      visitsLegend: document.getElementById("visitsLegend"),
+      growthChart: document.getElementById("growthChart"),
+      growthLegend: document.getElementById("growthLegend"),
+      callsChart: document.getElementById("callsChart"),
+      callsLegend: document.getElementById("callsLegend"),
       scorecardRows: document.getElementById("scorecardRows"),
       tableStatus: document.getElementById("tableStatus")
     };
@@ -915,6 +900,77 @@
       return `<rect class="band" x="${scale.pad.left}" y="${y1}" width="${width - scale.pad.left - scale.pad.right}" height="${Math.max(0, y2 - y1)}"></rect>`;
     }
 
+    function renderMetricTrend(target, legendTarget, title, key, formatter, options = {}) {
+      const width = 980;
+      const height = options.height || 280;
+      const data = byMonth(selectedRows());
+      const values = data.map(row => row[key]);
+      const rollingValues = rollingAverage(data, key, 3);
+      const rolling = rollingValues.map((value, index) => ({ month: data[index].month, [key]: value }));
+      const allValues = [...values, ...rollingValues].filter(value => value !== null && Number.isFinite(value));
+      const scale = svgScales(width, height, allValues);
+      const mainPath = pathFrom(data, key, scale);
+      const rollingPath = pathFrom(rolling, key, scale);
+      const points = data.map((point, index) => {
+        const value = point[key];
+        if (value === null || !Number.isFinite(value)) return "";
+        return `<circle cx="${scale.x(index)}" cy="${scale.y(value)}" r="3.2" fill="#2563eb">
+          <title>${esc(title)} | ${monthLabel(point.month)} | ${formatter(value)}</title>
+        </circle>`;
+      }).join("");
+
+      legendTarget.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly value</span>
+        <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>`;
+      target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">
+        ${grid(width, height, scale, formatter)}
+        ${options.band ? renderBand(scale, width, height, options.band[0], options.band[1]) : ""}
+        ${monthAxis(width, height, scale)}
+        ${mainPath ? `<path class="line" d="${mainPath}" stroke="#2563eb"></path>` : ""}
+        ${rollingPath ? `<path class="line dashed" d="${rollingPath}" stroke="#16a34a"></path>` : ""}
+        ${points}
+      </svg>`;
+    }
+
+    function renderGrowthTrend() {
+      const width = 980;
+      const height = 260;
+      const data = byMonth(selectedRows());
+      const growth = data.map((row, index) => {
+        if (index === 0) return { month: row.month, growth: null };
+        const previous = data[index - 1].revenue;
+        return {
+          month: row.month,
+          growth: previous ? ((row.revenue - previous) / Math.abs(previous)) * 100 : null
+        };
+      });
+      const values = growth.map(row => row.growth);
+      const rollingValues = rollingAverage(growth, "growth", 3);
+      const rolling = rollingValues.map((value, index) => ({ month: growth[index].month, growth: value }));
+      const allValues = [...values, ...rollingValues].filter(value => value !== null && Number.isFinite(value));
+      const scale = svgScales(width, height, allValues);
+      const zeroY = scale.y(0);
+      const mainPath = pathFrom(growth, "growth", scale);
+      const rollingPath = pathFrom(rolling, "growth", scale);
+      const points = growth.map((point, index) => {
+        const value = point.growth;
+        if (value === null || !Number.isFinite(value)) return "";
+        return `<circle cx="${scale.x(index)}" cy="${scale.y(value)}" r="3.2" fill="#2563eb">
+          <title>Revenue growth | ${monthLabel(point.month)} | ${value.toFixed(1)}%</title>
+        </circle>`;
+      }).join("");
+
+      els.growthLegend.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly revenue growth</span>
+        <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>`;
+      els.growthChart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">
+        ${grid(width, height, scale, value => `${value.toFixed(1)}%`)}
+        <line class="gridline" x1="${scale.pad.left}" x2="${width - scale.pad.right}" y1="${zeroY}" y2="${zeroY}"></line>
+        ${monthAxis(width, height, scale)}
+        ${mainPath ? `<path class="line" d="${mainPath}" stroke="#2563eb"></path>` : ""}
+        ${rollingPath ? `<path class="line dashed" d="${rollingPath}" stroke="#16a34a"></path>` : ""}
+        ${points}
+      </svg>`;
+    }
+
     function renderGroupedBars() {
       const data = byMonth(selectedRows());
       const width = 620;
@@ -1014,11 +1070,10 @@
         els.endMonth.value = state.endMonth;
       }
       renderScorecards();
-      renderLineChart(els.revenueChart, els.revenueLegend, "revenue", value => compactMoney.format(value), { height: 300 });
-      renderGroupedBars();
-      renderStackedBars();
-      renderLineChart(els.sentimentChart, els.sentimentLegend, "sentiment", value => value.toFixed(3), { height: 260, band: [0.75, 0.90] });
-      renderRanking();
+      renderMetricTrend(els.sentimentChart, els.sentimentLegend, "Sentiment score", "sentiment", value => value.toFixed(3), { height: 300, band: [0.75, 0.90] });
+      renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 260 });
+      renderGrowthTrend();
+      renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 260 });
       renderTable();
     }
 
