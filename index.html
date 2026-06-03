@@ -586,7 +586,7 @@
           welcomeCustomer: n(row.Welcome_New_Customer),
           welcomeVehicle: n(row.Welcome_New_Vehicle),
           returningLost: n(row.Returning_Lost_Vehicle),
-          newCustomers: n(row.Welcome_New_Customer) + n(row.Welcome_New_Vehicle)
+          newCustomers: n(row.Welcome_New_Customer)
         };
       }).filter(row => row.month);
     }
@@ -620,6 +620,21 @@
     function selectedRows() {
       const shopSet = new Set(selectedShopList());
       return rows.filter(row => row.month >= state.startMonth && row.month <= state.endMonth && shopSet.has(row.shop));
+    }
+
+    function selectedRowsForMonth(month) {
+      const shopSet = new Set(selectedShopList());
+      return rows.filter(row => row.month === month && shopSet.has(row.shop));
+    }
+
+    function selectedRowsAllMonths() {
+      const shopSet = new Set(selectedShopList());
+      return rows.filter(row => shopSet.has(row.shop));
+    }
+
+    function previousMonth(month) {
+      const index = months.indexOf(month);
+      return index > 0 ? months[index - 1] : null;
     }
 
     function priorRows() {
@@ -687,6 +702,7 @@
     function formatValue(key, value) {
       if (key === "revenue" || key === "avgRo") return money.format(value || 0);
       if (key === "conversion") return percent.format(value || 0);
+      if (key === "changePercent") return value === null ? "N/A" : `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
       if (key === "sentiment") return value === null ? "N/A" : Number(value).toFixed(3);
       return number.format(value || 0);
     }
@@ -696,12 +712,13 @@
       if (key === "avgRo") return value > 900 ? "green" : value >= 500 ? "yellow" : "red";
       if (key === "conversion") return value > 0.08 ? "green" : value >= 0.04 ? "yellow" : "red";
       if (key === "sentiment") return value > 0.82 ? "green" : value >= 0.75 ? "yellow" : "red";
+      if (key === "changePercent") return value > 0 ? "green" : value === 0 ? "yellow" : "red";
       if (key === "newCustomers") return value > 220 ? "green" : value >= 100 ? "yellow" : "red";
       return "green";
     }
 
     function deltaPercent(current, previous) {
-      if (!state.compare || !previous) return null;
+      if (previous === null || previous === undefined || previous === 0) return null;
       return ((current - previous) / Math.abs(previous)) * 100;
     }
 
@@ -747,32 +764,70 @@
     }
 
     function renderScorecards() {
-      const current = summarize(selectedRows());
-      const prior = summarize(priorRows());
+      const currentMonth = state.endMonth;
+      const previous = previousMonth(currentMonth);
+      const current = summarize(selectedRowsForMonth(currentMonth));
+      const prior = previous ? summarize(selectedRowsForMonth(previous)) : summarize([]);
+      const allMonths = summarize(selectedRowsAllMonths());
       const singleShopPoints = state.selectedShops.length === 1 ? byMonthShop(state.selectedShops[0]) : [];
+      const sentimentChange = deltaPercent(current.sentiment, prior.sentiment);
+      const visitChange = deltaPercent(current.visits, prior.visits);
       const cards = [
-        ["Total Revenue", "revenue"],
-        ["Avg RO", "avgRo"],
-        ["Call-to-Visit Conversion Rate", "conversion"],
-        ["Sentiment Score", "sentiment"],
-        ["New Customers", "newCustomers"]
+        {
+          title: `Current Month Sentiment`,
+          key: "sentiment",
+          value: current.sentiment,
+          delta: sentimentChange,
+          deltaLabel: previous ? `vs ${monthLabel(previous)}` : "No previous month",
+          sparkKey: "sentiment"
+        },
+        {
+          title: "Sentiment Change",
+          key: "changePercent",
+          value: sentimentChange,
+          delta: null,
+          deltaLabel: previous ? `${formatValue("sentiment", prior.sentiment)} to ${formatValue("sentiment", current.sentiment)}` : "No previous month",
+          sparkKey: "sentiment"
+        },
+        {
+          title: "Avg RO All Months",
+          key: "avgRo",
+          value: allMonths.avgRo,
+          delta: null,
+          deltaLabel: "All loaded months",
+          sparkKey: "avgRo"
+        },
+        {
+          title: "BDC Visit Change",
+          key: "changePercent",
+          value: visitChange,
+          delta: null,
+          deltaLabel: previous ? `${number.format(prior.visits)} to ${number.format(current.visits)} visits` : "No previous month",
+          sparkKey: "visits"
+        },
+        {
+          title: "New Customers",
+          key: "newCustomers",
+          value: current.newCustomers,
+          delta: deltaPercent(current.newCustomers, prior.newCustomers),
+          deltaLabel: "Welcome New Customer only",
+          sparkKey: "newCustomers"
+        }
       ];
 
-      els.scorecards.innerHTML = cards.map(([title, key]) => {
-        const currentValue = current[key];
-        const priorValue = prior[key];
-        const delta = deltaPercent(currentValue || 0, priorValue || 0);
+      els.scorecards.innerHTML = cards.map(card => {
+        const delta = card.delta;
         const deltaClass = delta === null ? "" : delta >= 0 ? "tier-green" : "tier-red";
         const arrow = delta === null ? "" : delta >= 0 ? "&#9650;" : "&#9660;";
-        const deltaText = delta === null ? "No prior period" : `${arrow} ${Math.abs(delta).toFixed(1)}%`;
+        const deltaText = delta === null ? card.deltaLabel : `${arrow} ${Math.abs(delta).toFixed(1)}% ${card.deltaLabel}`;
         return `<article class="tile">
           <div class="tile-head">
-            <div class="tile-title">${esc(title)}</div>
-            <span class="indicator tier-${tier(key, currentValue || 0)}"></span>
+            <div class="tile-title">${esc(card.title)}</div>
+            <span class="indicator tier-${tier(card.key, card.value || 0)}"></span>
           </div>
-          <div class="tile-value">${esc(formatValue(key, currentValue))}</div>
+          <div class="tile-value">${esc(formatValue(card.key, card.value))}</div>
           <div class="delta ${deltaClass}">${deltaText}</div>
-          ${sparkline(singleShopPoints, key)}
+          ${sparkline(singleShopPoints, card.sparkKey)}
         </article>`;
       }).join("");
     }
