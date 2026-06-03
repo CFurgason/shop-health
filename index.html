@@ -914,9 +914,13 @@
       const points = data.map((point, index) => {
         const value = point[key];
         if (value === null || !Number.isFinite(value)) return "";
-        return `<circle cx="${scale.x(index)}" cy="${scale.y(value)}" r="3.2" fill="#2563eb">
+        const x = scale.x(index);
+        const y = scale.y(value);
+        const labelY = Math.max(scale.pad.top + 10, y - 9);
+        return `<circle cx="${x}" cy="${y}" r="3.2" fill="#2563eb">
           <title>${esc(title)} | ${monthLabel(point.month)} | ${formatter(value)}</title>
-        </circle>`;
+        </circle>
+        <text class="axis-label" x="${x}" y="${labelY}" text-anchor="middle">${esc(formatter(value))}</text>`;
       }).join("");
 
       legendTarget.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly value</span>
@@ -954,9 +958,13 @@
       const points = growth.map((point, index) => {
         const value = point.growth;
         if (value === null || !Number.isFinite(value)) return "";
-        return `<circle cx="${scale.x(index)}" cy="${scale.y(value)}" r="3.2" fill="#2563eb">
+        const x = scale.x(index);
+        const y = scale.y(value);
+        const labelY = Math.max(scale.pad.top + 10, y - 9);
+        return `<circle cx="${x}" cy="${y}" r="3.2" fill="#2563eb">
           <title>Revenue growth | ${monthLabel(point.month)} | ${value.toFixed(1)}%</title>
-        </circle>`;
+        </circle>
+        <text class="axis-label" x="${x}" y="${labelY}" text-anchor="middle">${esc(`${value.toFixed(1)}%`)}</text>`;
       }).join("");
 
       els.growthLegend.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly revenue growth</span>
