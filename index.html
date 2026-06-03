@@ -446,7 +446,7 @@
     <section class="chart-grid">
       <section class="panel full">
         <div class="panel-head">
-          <h2>Sentiment Trend</h2>
+          <h2>Monthly Sentiment Score + 3-Month Trend</h2>
           <div id="sentimentLegend" class="legend"></div>
         </div>
         <div id="sentimentChart" class="chart"></div>
@@ -454,7 +454,7 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>BDC Visits Trend</h2>
+          <h2>Monthly BDC Visits + 3-Month Trend</h2>
           <div id="visitsLegend" class="legend"></div>
         </div>
         <div id="visitsChart" class="chart short"></div>
@@ -462,7 +462,7 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Monthly Growth %</h2>
+          <h2>Monthly Revenue Growth %</h2>
           <div id="growthLegend" class="legend"></div>
         </div>
         <div id="growthChart" class="chart short"></div>
@@ -470,7 +470,7 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Call Volume Trend</h2>
+          <h2>Monthly Call Volume + 3-Month Trend</h2>
           <div id="callsLegend" class="legend"></div>
         </div>
         <div id="callsChart" class="chart short"></div>
@@ -715,7 +715,7 @@
       els.endMonth.value = state.endMonth;
       els.compareToggle.classList.toggle("active", state.compare);
       els.themeToggle.textContent = state.dark ? "Light mode" : "Dark mode";
-      els.dataStatus.textContent = `${number.format(rows.length)} monthly rows | ${monthLabel(months[0])} to ${monthLabel(months[months.length - 1])}`;
+      els.dataStatus.textContent = `Updated graph set | ${number.format(rows.length)} monthly rows | ${monthLabel(months[0])} to ${monthLabel(months[months.length - 1])}`;
       updateShopButton();
     }
 
