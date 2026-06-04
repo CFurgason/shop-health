@@ -305,8 +305,17 @@
 
     .gridline { stroke: var(--grid); stroke-width: 1; }
     .axis-label { fill: var(--muted); font-size: 11px; }
-    .line { fill: none; stroke-width: 2.25; }
-    .line.dashed { stroke-dasharray: 6 5; opacity: 0.72; }
+    .value-label {
+      fill: var(--ink);
+      font-size: 13px;
+      font-weight: 850;
+      paint-order: stroke;
+      stroke: var(--panel);
+      stroke-width: 4px;
+      stroke-linejoin: round;
+    }
+    .line { fill: none; stroke-width: 3.8; }
+    .line.dashed { stroke-dasharray: 7 5; opacity: 0.9; stroke-width: 3; }
     .band { fill: var(--accent); opacity: 0.09; }
     .bar-calls { fill: #93c5fd; }
     .bar-visits { fill: #2563eb; }
@@ -478,19 +487,20 @@
 
       <section class="panel full">
         <div class="panel-head">
-          <h2>Shop Scorecard Table</h2>
+          <h2>Monthly Table</h2>
           <div id="tableStatus" class="subtle"></div>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th data-sort="shop">Shop Name</th>
+                <th data-sort="month">Month</th>
                 <th data-sort="revenue">Revenue</th>
-                <th data-sort="avgRo">Avg RO</th>
-                <th data-sort="conversion">Conversion Rate</th>
+                <th data-sort="avgRo">Average Revenue</th>
+                <th data-sort="calls">Calls</th>
                 <th data-sort="sentiment">Sentiment Score</th>
                 <th data-sort="newCustomers">New Customers</th>
+                <th data-sort="returningLost">Returning Customers</th>
               </tr>
             </thead>
             <tbody id="scorecardRows"></tbody>
@@ -530,8 +540,8 @@
       startMonth: "",
       endMonth: "",
       compare: true,
-      sort: "revenue",
-      sortDir: "desc",
+      sort: "month",
+      sortDir: "asc",
       dark: false
     };
 
@@ -917,10 +927,10 @@
         const x = scale.x(index);
         const y = scale.y(value);
         const labelY = Math.max(scale.pad.top + 10, y - 9);
-        return `<circle cx="${x}" cy="${y}" r="3.2" fill="#2563eb">
+        return `<circle cx="${x}" cy="${y}" r="4.6" fill="#2563eb">
           <title>${esc(title)} | ${monthLabel(point.month)} | ${formatter(value)}</title>
         </circle>
-        <text class="axis-label" x="${x}" y="${labelY}" text-anchor="middle">${esc(formatter(value))}</text>`;
+        <text class="value-label" x="${x}" y="${labelY}" text-anchor="middle">${esc(formatter(value))}</text>`;
       }).join("");
 
       legendTarget.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly value</span>
@@ -961,10 +971,10 @@
         const x = scale.x(index);
         const y = scale.y(value);
         const labelY = Math.max(scale.pad.top + 10, y - 9);
-        return `<circle cx="${x}" cy="${y}" r="3.2" fill="#2563eb">
+        return `<circle cx="${x}" cy="${y}" r="4.6" fill="#2563eb">
           <title>Revenue growth | ${monthLabel(point.month)} | ${value.toFixed(1)}%</title>
         </circle>
-        <text class="axis-label" x="${x}" y="${labelY}" text-anchor="middle">${esc(`${value.toFixed(1)}%`)}</text>`;
+        <text class="value-label" x="${x}" y="${labelY}" text-anchor="middle">${esc(`${value.toFixed(1)}%`)}</text>`;
       }).join("");
 
       els.growthLegend.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly revenue growth</span>
@@ -1051,21 +1061,24 @@
     }
 
     function renderTable() {
-      const source = selectedRows();
-      const data = selectedShopList().map(shop => shopSummary(shop, source)).filter(row => row.revenue || row.calls || row.newCustomers);
+      const shopSet = new Set(selectedShopList());
+      const source = rows.filter(row => shopSet.has(row.shop));
+      const data = months.map(month => ({ month, ...summarize(source.filter(row => row.month === month)) }))
+        .filter(row => row.revenue || row.calls || row.newCustomers || row.returningLost || row.sentiment !== null);
       data.sort((a, b) => {
         const dir = state.sortDir === "asc" ? 1 : -1;
-        if (state.sort === "shop") return a.shop.localeCompare(b.shop) * dir;
+        if (state.sort === "month") return a.month.localeCompare(b.month) * dir;
         return ((a[state.sort] || 0) - (b[state.sort] || 0)) * dir;
       });
-      els.tableStatus.textContent = `${number.format(data.length)} shops`;
-      els.scorecardRows.innerHTML = data.map(row => `<tr data-shop="${esc(row.shop)}">
-        <td><strong>${esc(row.shop)}</strong></td>
+      els.tableStatus.textContent = `${number.format(data.length)} months`;
+      els.scorecardRows.innerHTML = data.map(row => `<tr>
+        <td><strong>${esc(monthLabel(row.month))}</strong></td>
         <td class="tier-${tier("revenue", row.revenue)}">${esc(formatValue("revenue", row.revenue))}</td>
         <td class="tier-${tier("avgRo", row.avgRo)}">${esc(formatValue("avgRo", row.avgRo))}</td>
-        <td class="tier-${tier("conversion", row.conversion)}">${esc(formatValue("conversion", row.conversion))}</td>
+        <td>${esc(formatValue("calls", row.calls))}</td>
         <td class="tier-${tier("sentiment", row.sentiment || 0)}">${esc(formatValue("sentiment", row.sentiment))}</td>
         <td>${esc(formatValue("newCustomers", row.newCustomers))}</td>
+        <td>${esc(formatValue("returningLost", row.returningLost))}</td>
       </tr>`).join("");
     }
 
