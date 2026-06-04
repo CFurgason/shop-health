@@ -6,15 +6,16 @@
   <title>Shop Health Dashboard</title>
   <style>
     :root {
-      --bg: #f6f8fb;
+      --bg: #eef3f8;
       --panel: #ffffff;
-      --panel-2: #f9fbfd;
+      --panel-2: #f7f9fc;
       --ink: #17212b;
       --muted: #637083;
       --line: #dce3ec;
       --grid: #e8edf3;
       --accent: #2563eb;
       --accent-soft: #dbeafe;
+      --accent-ink: #17306f;
       --green: #15803d;
       --green-bg: #dcfce7;
       --yellow: #a16207;
@@ -34,6 +35,7 @@
       --grid: #283241;
       --accent: #60a5fa;
       --accent-soft: #1e3a5f;
+      --accent-ink: #dbeafe;
       --green: #6ee7a7;
       --green-bg: #173f2a;
       --yellow: #facc15;
@@ -47,7 +49,9 @@
 
     body {
       margin: 0;
-      background: var(--bg);
+      background:
+        linear-gradient(180deg, rgba(37, 99, 235, 0.08), transparent 260px),
+        var(--bg);
       color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       font-size: 14px;
@@ -60,15 +64,22 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      background: color-mix(in srgb, var(--panel) 96%, transparent);
       border-bottom: 1px solid var(--line);
-      box-shadow: 0 3px 14px rgba(22, 33, 43, 0.05);
+      box-shadow: 0 8px 24px rgba(22, 33, 43, 0.08);
       backdrop-filter: blur(12px);
+    }
+
+    .filter-bar::before {
+      content: "";
+      display: block;
+      height: 4px;
+      background: var(--accent);
     }
 
     .filter-inner {
       width: min(1440px, calc(100% - 28px));
-      min-height: 82px;
+      min-height: 90px;
       margin: 0 auto;
       display: grid;
       grid-template-columns: minmax(210px, 0.9fr) minmax(280px, 1.4fr) repeat(2, minmax(145px, 0.65fr)) auto auto;
@@ -78,7 +89,7 @@
 
     .brand h1 {
       margin: 0;
-      font-size: 22px;
+      font-size: 24px;
       letter-spacing: 0;
     }
 
@@ -102,7 +113,7 @@
       width: 100%;
       min-width: 0;
       border: 1px solid var(--line);
-      border-radius: 7px;
+      border-radius: 8px;
       background: var(--panel);
       color: var(--ink);
     }
@@ -117,6 +128,7 @@
       padding: 0 12px;
       cursor: pointer;
       white-space: nowrap;
+      font-weight: 750;
     }
 
     .multi {
@@ -169,36 +181,109 @@
     .button.active {
       border-color: var(--accent);
       background: var(--accent-soft);
-      color: var(--accent);
+      color: var(--accent-ink);
       font-weight: 800;
     }
 
     main {
       width: min(1440px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 16px 0 34px;
+      padding: 18px 0 38px;
+    }
+
+    .overview {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(520px, 1.15fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 14px;
+      padding: 22px;
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+      border-radius: 10px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--panel) 90%, var(--accent-soft)), var(--panel));
+      box-shadow: var(--shadow);
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .overview h2 {
+      margin: 4px 0 7px;
+      font-size: 30px;
+      line-height: 1.05;
+    }
+
+    .overview p {
+      margin: 0;
+      max-width: 720px;
+      color: var(--muted);
+    }
+
+    .overview-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .overview-metric {
+      display: grid;
+      align-content: space-between;
+      min-height: 116px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel) 82%, var(--panel-2));
+    }
+
+    .overview-metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .overview-metric strong {
+      margin-top: 16px;
+      font-size: 26px;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
     }
 
     .scorecards {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: 14px;
+      margin-bottom: 16px;
     }
 
     .tile, .panel {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 10px;
       box-shadow: var(--shadow);
     }
 
     .tile {
-      min-height: 134px;
-      padding: 13px;
+      position: relative;
+      overflow: hidden;
+      min-height: 148px;
+      padding: 15px;
       display: grid;
       gap: 10px;
       align-content: space-between;
+    }
+
+    .tile::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 4px;
+      background: var(--accent);
     }
 
     .tile-head {
@@ -210,14 +295,14 @@
 
     .tile-title {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 850;
       text-transform: uppercase;
     }
 
     .indicator {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       margin-top: 3px;
       border-radius: 50%;
       background: var(--muted);
@@ -235,7 +320,7 @@
     .indicator.tier-red { background: var(--red); }
 
     .tile-value {
-      font-size: 26px;
+      font-size: 29px;
       font-weight: 850;
       line-height: 1.05;
       overflow-wrap: anywhere;
@@ -247,7 +332,7 @@
       align-items: center;
       gap: 5px;
       border-radius: 999px;
-      padding: 4px 8px;
+      padding: 5px 9px;
       font-size: 12px;
       font-weight: 850;
     }
@@ -264,14 +349,14 @@
     .chart-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+      gap: 16px;
     }
 
     .panel.full { grid-column: 1 / -1; }
 
     .panel-head {
-      min-height: 48px;
-      padding: 12px 14px;
+      min-height: 54px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--line);
       display: flex;
       align-items: center;
@@ -281,7 +366,7 @@
 
     h2 {
       margin: 0;
-      font-size: 16px;
+      font-size: 17px;
       letter-spacing: 0;
     }
 
@@ -292,10 +377,10 @@
 
     .chart {
       height: 330px;
-      padding: 12px;
+      padding: 14px;
     }
 
-    .chart.short { height: 300px; }
+    .chart.short { height: 310px; }
 
     svg {
       width: 100%;
@@ -303,7 +388,7 @@
       display: block;
     }
 
-    .gridline { stroke: var(--grid); stroke-width: 1; }
+    .gridline { stroke: var(--grid); stroke-width: 1.1; }
     .axis-label { fill: var(--muted); font-size: 11px; }
     .value-label {
       fill: var(--ink);
@@ -335,6 +420,7 @@
       align-items: center;
       color: var(--muted);
       font-size: 12px;
+      font-weight: 700;
     }
 
     .legend span {
@@ -344,15 +430,15 @@
     }
 
     .swatch {
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
       background: var(--accent);
     }
 
     .table-wrap {
       overflow: auto;
-      max-height: 520px;
+      max-height: 560px;
     }
 
     table {
@@ -362,7 +448,7 @@
     }
 
     th, td {
-      padding: 9px 10px;
+      padding: 11px 12px;
       border-bottom: 1px solid var(--line);
       text-align: right;
       white-space: nowrap;
@@ -377,12 +463,13 @@
       background: var(--panel-2);
       color: var(--muted);
       font-size: 12px;
+      letter-spacing: 0;
       text-transform: uppercase;
       cursor: pointer;
     }
 
     tbody tr {
-      cursor: pointer;
+      cursor: default;
     }
 
     tbody tr:hover {
@@ -406,12 +493,16 @@
       }
 
       .brand { grid-column: 1 / -1; }
+      .overview { grid-template-columns: 1fr; }
       .scorecards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .chart-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 720px) {
       .filter-inner, .scorecards { grid-template-columns: 1fr; }
+      .overview { padding: 16px; }
+      .overview h2 { font-size: 24px; }
+      .overview-metrics { grid-template-columns: 1fr; }
       .chart { height: 280px; }
     }
   </style>
@@ -450,6 +541,28 @@
   </header>
 
   <main>
+    <section class="overview" aria-label="Dashboard overview">
+      <div>
+        <div class="eyebrow">Performance Snapshot</div>
+        <h2>Monthly Shop Health Command Center</h2>
+        <p id="overviewScope">All shops across the selected period.</p>
+      </div>
+      <div class="overview-metrics">
+        <div class="overview-metric">
+          <span>Revenue</span>
+          <strong id="overviewRevenue">$0</strong>
+        </div>
+        <div class="overview-metric">
+          <span>BDC Visits</span>
+          <strong id="overviewVisits">0</strong>
+        </div>
+        <div class="overview-metric">
+          <span>Sentiment</span>
+          <strong id="overviewSentiment">N/A</strong>
+        </div>
+      </div>
+    </section>
+
     <section id="scorecards" class="scorecards" aria-label="Scorecard row"></section>
 
     <section class="chart-grid">
@@ -500,7 +613,7 @@
                 <th data-sort="calls">Calls</th>
                 <th data-sort="sentiment">Sentiment Score</th>
                 <th data-sort="newCustomers">New Customers</th>
-                <th data-sort="returningLost">Returning Customers</th>
+                <th data-sort="returningCustomers">Returning Customers</th>
               </tr>
             </thead>
             <tbody id="scorecardRows"></tbody>
@@ -522,6 +635,10 @@
       endMonth: document.getElementById("endMonth"),
       compareToggle: document.getElementById("compareToggle"),
       themeToggle: document.getElementById("themeToggle"),
+      overviewScope: document.getElementById("overviewScope"),
+      overviewRevenue: document.getElementById("overviewRevenue"),
+      overviewVisits: document.getElementById("overviewVisits"),
+      overviewSentiment: document.getElementById("overviewSentiment"),
       scorecards: document.getElementById("scorecards"),
       sentimentChart: document.getElementById("sentimentChart"),
       sentimentLegend: document.getElementById("sentimentLegend"),
@@ -578,9 +695,11 @@
           effectiveRoCount: avgRo ? revenue / avgRo : 0,
           conversion: calls ? visits / calls : 0,
           sentiment,
+          nextDay: n(row.Next_Day_Satisfaction),
           welcomeCustomer: n(row.Welcome_New_Customer),
           welcomeVehicle: n(row.Welcome_New_Vehicle),
           returningLost: n(row.Returning_Lost_Vehicle),
+          returningCustomers: n(row.Next_Day_Satisfaction) + n(row.Welcome_New_Vehicle) + n(row.Returning_Lost_Vehicle),
           newCustomers: n(row.Welcome_New_Customer)
         };
       }).filter(row => row.month);
@@ -647,8 +766,8 @@
     function summarize(source) {
       const totals = {
         revenue: 0, avgRo: 0, calls: 0, visits: 0, conversion: 0,
-        sentiment: null, newCustomers: 0, welcomeCustomer: 0, welcomeVehicle: 0,
-        returningLost: 0, effectiveRoCount: 0
+        sentiment: null, newCustomers: 0, nextDay: 0, welcomeCustomer: 0, welcomeVehicle: 0,
+        returningLost: 0, returningCustomers: 0, effectiveRoCount: 0
       };
       let sentimentTotal = 0;
       let sentimentCount = 0;
@@ -657,9 +776,11 @@
         totals.calls += row.calls;
         totals.visits += row.visits;
         totals.newCustomers += row.newCustomers;
+        totals.nextDay += row.nextDay;
         totals.welcomeCustomer += row.welcomeCustomer;
         totals.welcomeVehicle += row.welcomeVehicle;
         totals.returningLost += row.returningLost;
+        totals.returningCustomers += row.returningCustomers;
         totals.effectiveRoCount += row.effectiveRoCount;
         if (row.sentiment !== null) {
           sentimentTotal += row.sentiment;
@@ -825,6 +946,21 @@
           ${sparkline(singleShopPoints, card.sparkKey)}
         </article>`;
       }).join("");
+    }
+
+    function renderOverview() {
+      const summary = summarize(selectedRows());
+      const activeMonths = selectedMonths();
+      const shopCount = selectedShopList().length;
+      const shopLabel = state.selectedShops.length ? `${shopCount} selected shops` : "all shops";
+      const periodLabel = activeMonths.length
+        ? `${monthLabel(activeMonths[0])} through ${monthLabel(activeMonths[activeMonths.length - 1])}`
+        : "no selected period";
+
+      els.overviewScope.textContent = `${shopLabel} | ${periodLabel}`;
+      els.overviewRevenue.textContent = money.format(summary.revenue);
+      els.overviewVisits.textContent = number.format(summary.visits);
+      els.overviewSentiment.textContent = formatValue("sentiment", summary.sentiment);
     }
 
     function svgScales(width, height, values, pad = { left: 62, right: 18, top: 18, bottom: 38 }) {
@@ -1064,7 +1200,7 @@
       const shopSet = new Set(selectedShopList());
       const source = rows.filter(row => shopSet.has(row.shop));
       const data = months.map(month => ({ month, ...summarize(source.filter(row => row.month === month)) }))
-        .filter(row => row.revenue || row.calls || row.newCustomers || row.returningLost || row.sentiment !== null);
+        .filter(row => row.revenue || row.calls || row.newCustomers || row.returningCustomers || row.sentiment !== null);
       data.sort((a, b) => {
         const dir = state.sortDir === "asc" ? 1 : -1;
         if (state.sort === "month") return a.month.localeCompare(b.month) * dir;
@@ -1078,7 +1214,7 @@
         <td>${esc(formatValue("calls", row.calls))}</td>
         <td class="tier-${tier("sentiment", row.sentiment || 0)}">${esc(formatValue("sentiment", row.sentiment))}</td>
         <td>${esc(formatValue("newCustomers", row.newCustomers))}</td>
-        <td>${esc(formatValue("returningLost", row.returningLost))}</td>
+        <td>${esc(formatValue("returningCustomers", row.returningCustomers))}</td>
       </tr>`).join("");
     }
 
@@ -1090,6 +1226,7 @@
         els.startMonth.value = state.startMonth;
         els.endMonth.value = state.endMonth;
       }
+      renderOverview();
       renderScorecards();
       renderMetricTrend(els.sentimentChart, els.sentimentLegend, "Sentiment score", "sentiment", value => value.toFixed(3), { height: 300, band: [0.75, 0.90] });
       renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 260 });
