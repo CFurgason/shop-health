@@ -497,6 +497,14 @@
         <div id="callsChart" class="chart short"></div>
       </section>
 
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Monthly Appointments + 3-Month Trend</h2>
+          <div id="appointmentsLegend" class="legend"></div>
+        </div>
+        <div id="appointmentsChart" class="chart short"></div>
+      </section>
+
       <section class="panel full">
         <div class="panel-head">
           <h2>Review Ratings by Month</h2>
@@ -551,6 +559,8 @@
       growthLegend: document.getElementById("growthLegend"),
       callsChart: document.getElementById("callsChart"),
       callsLegend: document.getElementById("callsLegend"),
+      appointmentsChart: document.getElementById("appointmentsChart"),
+      appointmentsLegend: document.getElementById("appointmentsLegend"),
       reviewsChart: document.getElementById("reviewsChart"),
       reviewsLegend: document.getElementById("reviewsLegend"),
       scorecardRows: document.getElementById("scorecardRows"),
@@ -616,6 +626,7 @@
           avgRo,
           calls,
           visits,
+          appointments: n(row.Appointments),
           effectiveRoCount: avgRo ? revenue / avgRo : 0,
           conversion: calls ? visits / calls : 0,
           sentiment,
@@ -695,7 +706,7 @@
 
     function summarize(source) {
       const totals = {
-        revenue: 0, avgRo: 0, calls: 0, visits: 0, conversion: 0,
+        revenue: 0, avgRo: 0, calls: 0, visits: 0, appointments: 0, conversion: 0,
         sentiment: null, newCustomers: 0, nextDay: 0, welcomeCustomer: 0, welcomeVehicle: 0,
         returningLost: 0, returningCustomers: 0, effectiveRoCount: 0,
         reviews: 0, star1: 0, star2: 0, star3: 0, star4: 0, star5: 0
@@ -706,6 +717,7 @@
         totals.revenue += row.revenue;
         totals.calls += row.calls;
         totals.visits += row.visits;
+        totals.appointments += row.appointments;
         totals.newCustomers += row.newCustomers;
         totals.nextDay += row.nextDay;
         totals.welcomeCustomer += row.welcomeCustomer;
@@ -1188,6 +1200,7 @@
       renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 260 });
       renderGrowthTrend();
       renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 260 });
+      renderMetricTrend(els.appointmentsChart, els.appointmentsLegend, "Appointments", "appointments", value => number.format(value), { height: 260 });
       renderReviewsChart();
       renderTable();
     }
