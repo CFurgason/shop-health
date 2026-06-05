@@ -323,10 +323,20 @@
     .bar-new-customer { fill: #2563eb; }
     .bar-new-vehicle { fill: #60a5fa; }
     .bar-returning { fill: #94a3b8; }
+    .bar-star-1 { fill: #dc2626; }
+    .bar-star-2 { fill: #ea580c; }
+    .bar-star-3 { fill: #ca8a04; }
+    .bar-star-4 { fill: #16a34a; }
+    .bar-star-5 { fill: #2563eb; }
     .swatch.bar-calls, .swatch.bar-new-vehicle { background: #60a5fa; }
     .swatch.bar-visits, .swatch.bar-new-customer { background: #2563eb; }
     .swatch.bar-ro { background: #1e40af; }
     .swatch.bar-returning { background: #94a3b8; }
+    .swatch.bar-star-1 { background: #dc2626; }
+    .swatch.bar-star-2 { background: #ea580c; }
+    .swatch.bar-star-3 { background: #ca8a04; }
+    .swatch.bar-star-4 { background: #16a34a; }
+    .swatch.bar-star-5 { background: #2563eb; }
 
     .legend {
       display: flex;
@@ -487,6 +497,14 @@
 
       <section class="panel full">
         <div class="panel-head">
+          <h2>Review Ratings by Month</h2>
+          <div id="reviewsLegend" class="legend"></div>
+        </div>
+        <div id="reviewsChart" class="chart short"></div>
+      </section>
+
+      <section class="panel full">
+        <div class="panel-head">
           <h2>Monthly Table</h2>
           <div id="tableStatus" class="subtle"></div>
         </div>
@@ -531,6 +549,8 @@
       growthLegend: document.getElementById("growthLegend"),
       callsChart: document.getElementById("callsChart"),
       callsLegend: document.getElementById("callsLegend"),
+      reviewsChart: document.getElementById("reviewsChart"),
+      reviewsLegend: document.getElementById("reviewsLegend"),
       scorecardRows: document.getElementById("scorecardRows"),
       tableStatus: document.getElementById("tableStatus")
     };
@@ -555,6 +575,21 @@
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : 0;
     }
+
+    function nFrom(row, keys) {
+      for (const key of keys) {
+        if (row[key] !== undefined && row[key] !== null && row[key] !== "") return n(row[key]);
+      }
+      return 0;
+    }
+
+    const reviewFields = [
+      { key: "star1", label: "1 star", sources: ["1 star", "1 star(P)"], cls: "bar-star-1" },
+      { key: "star2", label: "2 star", sources: ["2 star", "2 star(Q)"], cls: "bar-star-2" },
+      { key: "star3", label: "3 star", sources: ["3 star", "3 star(R)"], cls: "bar-star-3" },
+      { key: "star4", label: "4 star", sources: ["4 star", "4 star(S)"], cls: "bar-star-4" },
+      { key: "star5", label: "5 star", sources: ["5 star", "5 star(T)"], cls: "bar-star-5" }
+    ];
 
     function hydrateRows() {
       const sentimentMap = new Map();
@@ -582,6 +617,11 @@
           welcomeCustomer: n(row.Welcome_New_Customer),
           welcomeVehicle: n(row.Welcome_New_Vehicle),
           returningLost: n(row.Returning_Lost_Vehicle),
+          star1: nFrom(row, reviewFields[0].sources),
+          star2: nFrom(row, reviewFields[1].sources),
+          star3: nFrom(row, reviewFields[2].sources),
+          star4: nFrom(row, reviewFields[3].sources),
+          star5: nFrom(row, reviewFields[4].sources),
           returningCustomers: n(row.Next_Day_Satisfaction) + n(row.Welcome_New_Vehicle) + n(row.Returning_Lost_Vehicle),
           newCustomers: n(row.Welcome_New_Customer)
         };
@@ -650,7 +690,8 @@
       const totals = {
         revenue: 0, avgRo: 0, calls: 0, visits: 0, conversion: 0,
         sentiment: null, newCustomers: 0, nextDay: 0, welcomeCustomer: 0, welcomeVehicle: 0,
-        returningLost: 0, returningCustomers: 0, effectiveRoCount: 0
+        returningLost: 0, returningCustomers: 0, effectiveRoCount: 0,
+        star1: 0, star2: 0, star3: 0, star4: 0, star5: 0
       };
       let sentimentTotal = 0;
       let sentimentCount = 0;
@@ -663,6 +704,11 @@
         totals.welcomeCustomer += row.welcomeCustomer;
         totals.welcomeVehicle += row.welcomeVehicle;
         totals.returningLost += row.returningLost;
+        totals.star1 += row.star1;
+        totals.star2 += row.star2;
+        totals.star3 += row.star3;
+        totals.star4 += row.star4;
+        totals.star5 += row.star5;
         totals.returningCustomers += row.returningCustomers;
         totals.effectiveRoCount += row.effectiveRoCount;
         if (row.sentiment !== null) {
@@ -1044,6 +1090,41 @@
       els.customerChart.innerHTML = `<svg viewBox="0 0 ${width} ${height}">${grid(width, height, fakeScale, value => number.format(value))}${bars}</svg>`;
     }
 
+    function renderReviewsChart() {
+      const data = byMonth(selectedRows());
+      const width = 760;
+      const height = 280;
+      const pad = { left: 54, right: 14, top: 18, bottom: 42 };
+      const max = Math.max(0, ...data.flatMap(row => reviewFields.map(field => row[field.key])));
+      els.reviewsLegend.innerHTML = reviewFields.map(field => `<span><i class="swatch ${field.cls}"></i>${field.label}</span>`).join("");
+
+      if (!max) {
+        els.reviewsChart.innerHTML = `<svg viewBox="0 0 ${width} ${height}">
+          <text class="axis-label" x="${width / 2}" y="${height / 2}" text-anchor="middle">No review rating data for this selection</text>
+        </svg>`;
+        return;
+      }
+
+      const y = value => height - pad.bottom - (value / max) * (height - pad.top - pad.bottom);
+      const groupWidth = (width - pad.left - pad.right) / Math.max(1, data.length);
+      const gap = Math.max(1, Math.min(3, groupWidth / 24));
+      const barWidth = Math.max(4, Math.min(14, (groupWidth * 0.72) / reviewFields.length));
+      const bars = data.map((row, index) => {
+        const groupBarWidth = reviewFields.length * barWidth + (reviewFields.length - 1) * gap;
+        const baseX = pad.left + index * groupWidth + (groupWidth - groupBarWidth) / 2;
+        const monthBars = reviewFields.map((field, barIndex) => {
+          const value = row[field.key];
+          const barHeight = height - pad.bottom - y(value);
+          return `<rect class="${field.cls}" x="${baseX + barIndex * (barWidth + gap)}" y="${y(value)}" width="${barWidth}" height="${barHeight}">
+            <title>${field.label} | ${monthLabel(row.month)} | ${number.format(value)}</title>
+          </rect>`;
+        }).join("");
+        return monthBars + `<text class="axis-label" x="${pad.left + index * groupWidth + groupWidth / 2}" y="${height - 12}" text-anchor="middle">${esc(monthLabel(row.month).slice(0, 3))}</text>`;
+      }).join("");
+      const fakeScale = { min: 0, max, pad, y };
+      els.reviewsChart.innerHTML = `<svg viewBox="0 0 ${width} ${height}">${grid(width, height, fakeScale, value => number.format(value))}${bars}</svg>`;
+    }
+
     function renderRanking() {
       const source = selectedRows();
       const data = selectedShopList().map(shop => shopSummary(shop, source)).sort((a, b) => b.avgRo - a.avgRo);
@@ -1099,6 +1180,7 @@
       renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 260 });
       renderGrowthTrend();
       renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 260 });
+      renderReviewsChart();
       renderTable();
     }
 
