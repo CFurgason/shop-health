@@ -614,10 +614,10 @@
       }
 
       return (RAW_DATA.pastMonths || []).map(row => {
-        const revenue = n(row["Total BDC Effective RO"]);
-        const avgRo = n(row["BDC Avg RO"]);
-        const visits = n(row["Total BDC Visits"]);
-        const calls = n(row["Total Calls"]);
+        const revenue = nFrom(row, ["Total BDC Effective RO"]);
+        const avgRo = nFrom(row, ["BDC Avg RO"]);
+        const visits = nFrom(row, ["Total BDC Visits"]);
+        const calls = nFrom(row, ["Total Calls"]);
         const sentiment = sentimentMap.get(`${row.Shop_Name}|${row.Date}`) || n(row.sentiment_score) || null;
         return {
           shop: row.Shop_Name || "Unknown Shop",
@@ -992,6 +992,14 @@
       const rollingValues = rollingAverage(data, key, 3);
       const rolling = rollingValues.map((value, index) => ({ month: data[index].month, [key]: value }));
       const allValues = [...values, ...rollingValues].filter(value => value !== null && Number.isFinite(value));
+      legendTarget.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly value</span>
+        <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>`;
+      if (options.emptyWhenZero && !values.some(value => Number.isFinite(value) && value > 0)) {
+        target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">
+          <text class="axis-label" x="${width / 2}" y="${height / 2}" text-anchor="middle">No ${esc(title.toLowerCase())} data for this selection</text>
+        </svg>`;
+        return;
+      }
       const scale = svgScales(width, height, allValues);
       const mainPath = pathFrom(data, key, scale);
       const rollingPath = pathFrom(rolling, key, scale);
@@ -1007,8 +1015,6 @@
         <text class="value-label" x="${x}" y="${labelY}" text-anchor="middle">${esc(formatter(value))}</text>`;
       }).join("");
 
-      legendTarget.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly value</span>
-        <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>`;
       target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">
         ${grid(width, height, scale, formatter)}
         ${options.band ? renderBand(scale, width, height, options.band[0], options.band[1]) : ""}
@@ -1204,7 +1210,7 @@
       renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 260 });
       renderGrowthTrend();
       renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 260 });
-      renderMetricTrend(els.appointmentsChart, els.appointmentsLegend, "Appointments", "appointments", value => number.format(value), { height: 260 });
+      renderMetricTrend(els.appointmentsChart, els.appointmentsLegend, "Appointments", "appointments", value => number.format(value), { height: 260, emptyWhenZero: true });
       renderReviewsChart();
       renderTable();
     }
