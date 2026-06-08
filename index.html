@@ -648,9 +648,13 @@
 
     const rows = hydrateRows();
     const months = [...new Set(rows.map(row => row.month))].sort();
-    const shops = [...new Set(rows.map(row => row.shop))].sort((a, b) => a.localeCompare(b));
+    const latestNextDayMonths = new Set(months.slice(Math.max(0, months.length - 2)));
+    const shops = [...new Set(rows
+      .filter(row => latestNextDayMonths.has(row.month) && row.nextDay > 0)
+      .map(row => row.shop))]
+      .sort((a, b) => a.localeCompare(b));
 
-    state.startMonth = months[Math.max(0, months.length - 6)];
+    state.startMonth = months[0];
     state.endMonth = months[months.length - 1];
 
     function monthLabel(month) {
