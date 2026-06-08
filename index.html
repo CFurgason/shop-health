@@ -648,9 +648,14 @@
 
     const rows = hydrateRows();
     const months = [...new Set(rows.map(row => row.month))].sort();
-    const latestNextDayMonths = new Set(months.slice(Math.max(0, months.length - 2)));
+
+    const latestCallMonths = months.slice(-2);
+    const shopsWithRecentCalls = new Set([...new Set(rows.map(row => row.shop))]
+      .filter(shop => latestCallMonths.every(month =>
+        rows.some(row => row.shop === shop && row.month === month && row.calls > 0)
+      )));
     const shops = [...new Set(rows
-      .filter(row => latestNextDayMonths.has(row.month) && row.nextDay > 0)
+      .filter(row => shopsWithRecentCalls.has(row.shop))
       .map(row => row.shop))]
       .sort((a, b) => a.localeCompare(b));
 
