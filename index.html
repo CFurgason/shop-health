@@ -198,14 +198,17 @@
       padding: 13px;
       display: grid;
       gap: 10px;
-      align-content: space-between;
+      align-content: center;
+      justify-items: center;
+      text-align: center;
     }
 
     .tile-head {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       gap: 8px;
-      align-items: start;
+      align-items: center;
+      width: 100%;
     }
 
     .tile-title {
@@ -218,7 +221,6 @@
     .indicator {
       width: 10px;
       height: 10px;
-      margin-top: 3px;
       border-radius: 50%;
       background: var(--muted);
       flex: 0 0 auto;
@@ -251,15 +253,6 @@
       font-size: 12px;
       font-weight: 850;
     }
-
-    .spark {
-      width: 100%;
-      height: 28px;
-      display: none;
-    }
-
-    .spark.visible { display: block; }
-    .spark path { fill: none; stroke: var(--accent); stroke-width: 2; }
 
     .chart-grid {
       display: grid;
@@ -824,32 +817,12 @@
       }
     }
 
-    function sparkline(points, key) {
-      if (state.selectedShops.length !== 1) return "";
-      const values = points.map(point => point[key]).filter(value => value !== null && Number.isFinite(value));
-      if (values.length < 2) return "";
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      const range = max - min || 1;
-      const full = points.map(point => point[key]);
-      let valueIndex = 0;
-      const coords = full.map((value, index) => {
-        if (value === null || !Number.isFinite(value)) return null;
-        valueIndex += 1;
-        const x = (index / Math.max(1, full.length - 1)) * 100;
-        const y = 25 - ((value - min) / range) * 22;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      }).filter(Boolean);
-      return `<svg class="spark visible" viewBox="0 0 100 28" preserveAspectRatio="none"><path d="M ${coords.join(" L ")}"></path></svg>`;
-    }
-
     function renderScorecards() {
       const currentMonth = state.endMonth;
       const previous = previousMonth(currentMonth);
       const current = summarize(selectedRowsForMonth(currentMonth));
       const prior = previous ? summarize(selectedRowsForMonth(previous)) : summarize([]);
       const allMonths = summarize(selectedRowsAllMonths());
-      const singleShopPoints = state.selectedShops.length === 1 ? byMonthShop(state.selectedShops[0]) : [];
       const sentimentChange = deltaPercent(current.sentiment, prior.sentiment);
       const visitChange = deltaPercent(current.visits, prior.visits);
       const cards = [
@@ -858,40 +831,35 @@
           key: "sentiment",
           value: current.sentiment,
           delta: sentimentChange,
-          deltaLabel: previous ? `vs ${monthLabel(previous)}` : "No previous month",
-          sparkKey: "sentiment"
+          deltaLabel: previous ? `vs ${monthLabel(previous)}` : "No previous month"
         },
         {
           title: "Sentiment Change",
           key: "changePercent",
           value: sentimentChange,
           delta: null,
-          deltaLabel: previous ? `${formatValue("sentiment", prior.sentiment)} to ${formatValue("sentiment", current.sentiment)}` : "No previous month",
-          sparkKey: "sentiment"
+          deltaLabel: previous ? `${formatValue("sentiment", prior.sentiment)} to ${formatValue("sentiment", current.sentiment)}` : "No previous month"
         },
         {
           title: "Avg RO All Months",
           key: "avgRo",
           value: allMonths.avgRo,
           delta: null,
-          deltaLabel: "All loaded months",
-          sparkKey: "avgRo"
+          deltaLabel: "All loaded months"
         },
         {
           title: "BDC Visit Change",
           key: "changePercent",
           value: visitChange,
           delta: null,
-          deltaLabel: previous ? `${number.format(prior.visits)} to ${number.format(current.visits)} visits` : "No previous month",
-          sparkKey: "visits"
+          deltaLabel: previous ? `${number.format(prior.visits)} to ${number.format(current.visits)} visits` : "No previous month"
         },
         {
           title: "New Customers",
           key: "newCustomers",
           value: current.newCustomers,
           delta: deltaPercent(current.newCustomers, prior.newCustomers),
-          deltaLabel: "Welcome New Customer only",
-          sparkKey: "newCustomers"
+          deltaLabel: "Welcome New Customer only"
         }
       ];
 
@@ -907,7 +875,6 @@
           </div>
           <div class="tile-value">${esc(formatValue(card.key, card.value))}</div>
           <div class="delta ${deltaClass}">${deltaText}</div>
-          ${sparkline(singleShopPoints, card.sparkKey)}
         </article>`;
       }).join("");
     }
