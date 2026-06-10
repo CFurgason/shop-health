@@ -293,6 +293,8 @@
     .chart {
       height: 330px;
       padding: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
 
     .chart.short { height: 300px; }
@@ -301,6 +303,10 @@
       width: 100%;
       height: 100%;
       display: block;
+    }
+
+    .wide-chart {
+      max-width: none;
     }
 
     .gridline { stroke: var(--grid); stroke-width: 1; }
@@ -918,6 +924,14 @@
       };
     }
 
+    function chartWidth(min = 980, pxPerMonth = 76) {
+      return Math.max(min, 88 + selectedMonths().length * pxPerMonth);
+    }
+
+    function chartSvg(width, height, content, attrs = 'role="img"') {
+      return `<svg class="wide-chart" style="width:${width}px; min-width:${width}px;" viewBox="0 0 ${width} ${height}" ${attrs}>${content}</svg>`;
+    }
+
     function grid(width, height, scale, format) {
       return [0, 0.25, 0.5, 0.75, 1].map(tick => {
         const value = scale.min + (scale.max - scale.min) * tick;
@@ -950,7 +964,7 @@
     }
 
     function renderLineChart(target, legendTarget, key, formatter, options = {}) {
-      const width = 980;
+      const width = chartWidth(980, 76);
       const height = options.height || 280;
       const selected = selectedShopList();
       const series = selected.map(shop => ({ shop, points: byMonthShop(shop) }));
@@ -975,12 +989,12 @@
       }).join("");
 
       legendTarget.innerHTML = selected.slice(0, 8).map((shop, index) => `<span><i class="swatch" style="background:${colors[index % colors.length]}"></i>${esc(shop)}</span>`).join("");
-      target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">
+      target.innerHTML = chartSvg(width, height, `
         ${grid(width, height, scale, formatter)}
         ${options.band ? renderBand(scale, width, height, options.band[0], options.band[1]) : ""}
         ${labels}
         ${lines}
-      </svg>`;
+      `);
     }
 
     function renderBand(scale, width, height, low, high) {
@@ -990,7 +1004,7 @@
     }
 
     function renderMetricTrend(target, legendTarget, title, key, formatter, options = {}) {
-      const width = 980;
+      const width = chartWidth(980, 76);
       const height = options.height || 280;
       const data = byMonth(selectedRows());
       const values = data.map(row => row[key]);
@@ -1000,9 +1014,9 @@
       legendTarget.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly value</span>
         <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>`;
       if (options.emptyWhenZero && !values.some(value => Number.isFinite(value) && value > 0)) {
-        target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">
+        target.innerHTML = chartSvg(width, height, `
           <text class="axis-label" x="${width / 2}" y="${height / 2}" text-anchor="middle">No ${esc(title.toLowerCase())} data for this selection</text>
-        </svg>`;
+        `);
         return;
       }
       const scale = svgScales(width, height, allValues);
@@ -1020,18 +1034,18 @@
         <text class="value-label" x="${x}" y="${labelY}" text-anchor="middle">${esc(formatter(value))}</text>`;
       }).join("");
 
-      target.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">
+      target.innerHTML = chartSvg(width, height, `
         ${grid(width, height, scale, formatter)}
         ${options.band ? renderBand(scale, width, height, options.band[0], options.band[1]) : ""}
         ${monthAxis(width, height, scale)}
         ${mainPath ? `<path class="line" d="${mainPath}" stroke="#2563eb"></path>` : ""}
         ${rollingPath ? `<path class="line dashed" d="${rollingPath}" stroke="#16a34a"></path>` : ""}
         ${points}
-      </svg>`;
+      `);
     }
 
     function renderGrowthTrend() {
-      const width = 980;
+      const width = chartWidth(980, 76);
       const height = 260;
       const data = byMonth(selectedRows());
       const growth = data.map((row, index) => {
@@ -1064,14 +1078,14 @@
 
       els.growthLegend.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly revenue growth</span>
         <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>`;
-      els.growthChart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img">
+      els.growthChart.innerHTML = chartSvg(width, height, `
         ${grid(width, height, scale, value => `${value.toFixed(1)}%`)}
         <line class="gridline" x1="${scale.pad.left}" x2="${width - scale.pad.right}" y1="${zeroY}" y2="${zeroY}"></line>
         ${monthAxis(width, height, scale)}
         ${mainPath ? `<path class="line" d="${mainPath}" stroke="#2563eb"></path>` : ""}
         ${rollingPath ? `<path class="line dashed" d="${rollingPath}" stroke="#16a34a"></path>` : ""}
         ${points}
-      </svg>`;
+      `);
     }
 
     function renderGroupedBars() {
@@ -1127,16 +1141,16 @@
 
     function renderReviewsChart() {
       const data = byMonth(selectedRows());
-      const width = 760;
+      const width = chartWidth(980, 76);
       const height = 280;
       const pad = { left: 54, right: 14, top: 18, bottom: 42 };
       const max = Math.max(0, ...data.flatMap(row => reviewFields.map(field => row[field.key])));
       els.reviewsLegend.innerHTML = reviewFields.map(field => `<span><i class="swatch ${field.cls}"></i>${field.label}</span>`).join("");
 
       if (!max) {
-        els.reviewsChart.innerHTML = `<svg viewBox="0 0 ${width} ${height}">
+        els.reviewsChart.innerHTML = chartSvg(width, height, `
           <text class="axis-label" x="${width / 2}" y="${height / 2}" text-anchor="middle">No saved 1-5 star review data found for this selection</text>
-        </svg>`;
+        `, "");
         return;
       }
 
@@ -1157,7 +1171,7 @@
         return monthBars + `<text class="axis-label" x="${pad.left + index * groupWidth + groupWidth / 2}" y="${height - 12}" text-anchor="middle">${esc(monthLabel(row.month).slice(0, 3))}</text>`;
       }).join("");
       const fakeScale = { min: 0, max, pad, y };
-      els.reviewsChart.innerHTML = `<svg viewBox="0 0 ${width} ${height}">${grid(width, height, fakeScale, value => number.format(value))}${bars}</svg>`;
+      els.reviewsChart.innerHTML = chartSvg(width, height, `${grid(width, height, fakeScale, value => number.format(value))}${bars}`, "");
     }
 
     function renderRanking() {
