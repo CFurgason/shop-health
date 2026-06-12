@@ -597,6 +597,9 @@
       return 0;
     }
 
+    const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1lmSyCCP0RnOhU2CWJv9LzfAaHe7R_y4D56Vr3CAJ3YA/edit?usp=sharing";
+    const GOOGLE_SHEET_REFRESH_MS = 5 * 60 * 1000;
+
     const reviewFields = [
       { key: "reviews", label: "Reviews", sources: ["Reviews"], cls: "bar-reviews" },
       { key: "star1", label: "1 star", sources: ["1 star", "1 star(P)", "1 star (P)"], cls: "bar-star-1" },
@@ -606,13 +609,83 @@
       { key: "star5", label: "5 star", sources: ["5 star", "5 star(T)", "5 star (T)"], cls: "bar-star-5" }
     ];
 
-    function hydrateRows() {
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let quoted = false;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        const next = text[index + 1];
+
+        if (char === '"' && quoted && next === '"') {
+          value += '"';
+          index += 1;
+        } else if (char === '"') {
+          quoted = !quoted;
+        } else if (char === "," && !quoted) {
+          row.push(value);
+          value = "";
+        } else if ((char === "\n" || char === "\r") && !quoted) {
+          if (char === "\r" && next === "\n") index += 1;
+          row.push(value);
+          if (row.some(cell => cell.trim() !== "")) rows.push(row);
+          row = [];
+          value = "";
+        } else {
+          value += char;
+        }
+      }
+
+      row.push(value);
+      if (row.some(cell => cell.trim() !== "")) rows.push(row);
+      return rows;
+    }
+
+    function csvToObjects(text) {
+      const parsed = parseCsv(text);
+      const headers = (parsed.shift() || []).map(header => header.trim());
+      return parsed.map(cells => {
+        const item = {};
+        headers.forEach((header, index) => {
+          const raw = (cells[index] || "").trim();
+          const numeric = raw === "" ? null : Number(raw.replace(/[$,%]/g, ""));
+          item[header] = raw !== "" && Number.isFinite(numeric) && /^-?[$\d,.%]+$/.test(raw) ? numeric : raw || null;
+        });
+        if (!item.Date && item.Month) item.Date = item.Month;
+        return item;
+      });
+    }
+
+    function normalizeSheetUrl(rawUrl) {
+      if (!rawUrl) return "";
+      try {
+        const url = new URL(rawUrl);
+        if (!url.hostname.includes("docs.google.com") || !url.pathname.includes("/spreadsheets/")) return rawUrl;
+        if (url.searchParams.get("output") === "csv" || url.searchParams.get("tqx") === "out:csv") return rawUrl;
+
+        const id = url.pathname.match(/\/d\/([^/]+)/)?.[1];
+        if (!id) return rawUrl;
+        const gid = url.searchParams.get("gid") || url.hash.match(/gid=(\d+)/)?.[1] || "0";
+        return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`;
+      } catch {
+        return rawUrl;
+      }
+    }
+
+    function sheetCsvUrl() {
+      const queryUrl = new URLSearchParams(window.location.search).get("sheet");
+      return normalizeSheetUrl(queryUrl || localStorage.getItem("shopHealthSheetCsvUrl") || GOOGLE_SHEET_CSV_URL);
+    }
+
+    function hydrateRows(data = RAW_DATA) {
       const sentimentMap = new Map();
-      for (const row of RAW_DATA.sentiment || []) {
+      for (const row of data.sentiment || []) {
         sentimentMap.set(`${row.Shop_Name}|${row.Date}`, n(row.Shop_Score));
       }
 
-      return (RAW_DATA.pastMonths || []).map(row => {
+      return (data.pastMonths || []).map(row => {
         const revenue = nFrom(row, ["Total BDC Effective RO"]);
         const avgRo = nFrom(row, ["BDC Avg RO"]);
         const visits = nFrom(row, ["Total BDC Visits"]);
@@ -645,21 +718,50 @@
       }).filter(row => row.month);
     }
 
-    const rows = hydrateRows();
-    const months = [...new Set(rows.map(row => row.month))].sort();
+    let rows = [];
+    let months = [];
+    let shops = [];
 
-    const latestCallMonths = months.slice(-2);
-    const shopsWithRecentCalls = new Set([...new Set(rows.map(row => row.shop))]
-      .filter(shop => latestCallMonths.every(month =>
-        rows.some(row => row.shop === shop && row.month === month && row.calls > 0)
-      )));
-    const shops = [...new Set(rows
-      .filter(row => shopsWithRecentCalls.has(row.shop))
-      .map(row => row.shop))]
-      .sort((a, b) => a.localeCompare(b));
+    function loadDataSet(data) {
+      rows = hydrateRows(data);
+      months = [...new Set(rows.map(row => row.month))].sort();
 
-    state.startMonth = months[0];
-    state.endMonth = months[months.length - 1];
+      const latestCallMonths = months.slice(-2);
+      const shopsWithRecentCalls = new Set([...new Set(rows.map(row => row.shop))]
+        .filter(shop => latestCallMonths.every(month =>
+          rows.some(row => row.shop === shop && row.month === month && row.calls > 0)
+        )));
+      shops = [...new Set(rows
+        .filter(row => shopsWithRecentCalls.has(row.shop))
+        .map(row => row.shop))]
+        .sort((a, b) => a.localeCompare(b));
+
+      state.selectedShops = state.selectedShops.filter(shop => shops.includes(shop));
+      if (!months.includes(state.startMonth)) state.startMonth = months[0] || "";
+      if (!months.includes(state.endMonth)) state.endMonth = months[months.length - 1] || "";
+    }
+
+    async function refreshFromSheet() {
+      const url = sheetCsvUrl();
+      if (!url) return false;
+
+      try {
+        const response = await fetch(`${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Google Sheet returned ${response.status}`);
+        const liveRows = csvToObjects(await response.text());
+        loadDataSet({ pastMonths: liveRows, sentiment: [] });
+        renderControls();
+        render();
+        els.dataStatus.textContent += " | Live Google Sheet";
+        return true;
+      } catch (error) {
+        els.dataStatus.textContent += ` | Live sheet failed, showing snapshot`;
+        console.error(error);
+        return false;
+      }
+    }
+
+    loadDataSet(RAW_DATA);
 
     function monthLabel(month) {
       const [year, monthNumber] = month.split("-").map(Number);
@@ -803,7 +905,9 @@
       els.endMonth.value = state.endMonth;
       els.compareToggle.classList.toggle("active", state.compare);
       els.themeToggle.textContent = state.dark ? "Light mode" : "Dark mode";
-      els.dataStatus.textContent = `Updated graph set | ${number.format(rows.length)} monthly rows | ${monthLabel(months[0])} to ${monthLabel(months[months.length - 1])}`;
+      els.dataStatus.textContent = months.length
+        ? `Updated graph set | ${number.format(rows.length)} monthly rows | ${monthLabel(months[0])} to ${monthLabel(months[months.length - 1])}`
+        : "No dashboard rows loaded";
       updateShopButton();
     }
 
@@ -1184,6 +1288,7 @@
     }
 
     function render() {
+      if (!months.length) return;
       if (state.startMonth > state.endMonth) {
         const oldStart = state.startMonth;
         state.startMonth = state.endMonth;
@@ -1203,6 +1308,8 @@
 
     renderControls();
     render();
+    refreshFromSheet();
+    if (sheetCsvUrl()) setInterval(refreshFromSheet, GOOGLE_SHEET_REFRESH_MS);
 
     els.shopButton.addEventListener("click", () => {
       els.shopDropdown.classList.toggle("open");
