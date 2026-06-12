@@ -654,8 +654,48 @@
           item[header] = raw !== "" && Number.isFinite(numeric) && /^-?[$\d,.%]+$/.test(raw) ? numeric : raw || null;
         });
         if (!item.Date && item.Month) item.Date = item.Month;
+        if (!item.Date && cells[1]) item.Date = cells[1].trim();
         return item;
       });
+    }
+
+    function firstValue(row, keys) {
+      const lookup = new Map(Object.keys(row).map(key => [key.trim().toLowerCase(), row[key]]));
+      for (const key of keys) {
+        if (row[key] !== undefined && row[key] !== null && row[key] !== "") return row[key];
+        const value = lookup.get(key.trim().toLowerCase());
+        if (value !== undefined && value !== null && value !== "") return value;
+      }
+      return null;
+    }
+
+    function normalizeMonth(value) {
+      if (value === null || value === undefined || value === "") return "";
+
+      if (typeof value === "number" && Number.isFinite(value)) {
+        const date = new Date(Date.UTC(1899, 11, 30 + value));
+        return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+      }
+
+      const text = String(value).trim();
+      let match = text.match(/^(\d{4})[-/](\d{1,2})(?:[-/]\d{1,2})?$/);
+      if (match) return `${match[1]}-${match[2].padStart(2, "0")}`;
+
+      match = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+      if (match) {
+        const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+        return `${year}-${match[1].padStart(2, "0")}`;
+      }
+
+      match = text.match(/^(\d{1,2})[-/](\d{4})$/);
+      if (match) return `${match[2]}-${match[1].padStart(2, "0")}`;
+
+      const parsed = new Date(text.includes(",") ? text : `${text} 1`);
+      if (!Number.isNaN(parsed.getTime())) {
+        return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      return "";
     }
 
     function normalizeSheetUrl(rawUrl) {
@@ -690,10 +730,11 @@
         const avgRo = nFrom(row, ["BDC Avg RO"]);
         const visits = nFrom(row, ["Total BDC Visits"]);
         const calls = nFrom(row, ["Total Calls"]);
+        const month = normalizeMonth(firstValue(row, ["Date", "Month"]));
         const sentiment = sentimentMap.get(`${row.Shop_Name}|${row.Date}`) || n(row.sentiment_score) || null;
         return {
           shop: row.Shop_Name || "Unknown Shop",
-          month: row.Date,
+          month,
           revenue,
           avgRo,
           calls,
@@ -764,6 +805,9 @@
     loadDataSet(RAW_DATA);
 
     function monthLabel(month) {
+      const normalized = normalizeMonth(month);
+      if (!normalized) return String(month || "");
+      month = normalized;
       const [year, monthNumber] = month.split("-").map(Number);
       return new Date(year, monthNumber - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" });
     }
