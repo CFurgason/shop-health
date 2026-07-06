@@ -68,12 +68,12 @@
 
     .filter-inner {
       width: min(1440px, calc(100% - 28px));
-      min-height: 82px;
       margin: 0 auto;
       display: grid;
       grid-template-columns: minmax(210px, 0.9fr) minmax(280px, 1.4fr) repeat(2, minmax(145px, 0.65fr)) auto auto;
       gap: 10px;
       align-items: center;
+      padding: 10px 0;
     }
 
     .brand h1 {
@@ -92,7 +92,8 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-top: 10px;
+      grid-column: 1 / -1;
+      margin-top: 0;
     }
 
     .view-tab {
@@ -646,10 +647,6 @@
       <div class="brand">
         <h1>Shop Health Dashboard</h1>
         <p id="dataStatus">Monthly totals</p>
-        <div class="view-tabs" aria-label="Dashboard views">
-          <button id="dashboardViewButton" class="button view-tab active" type="button">Dashboard</button>
-          <button id="compareViewButton" class="button view-tab" type="button">Date Range Comparison Dashboard</button>
-        </div>
       </div>
       <div class="dashboard-filter">
         <label for="shopButton">Shops</label>
@@ -669,6 +666,10 @@
       <div>
         <label>&nbsp;</label>
         <button id="themeToggle" class="button" type="button">Dark mode</button>
+      </div>
+      <div class="view-tabs" aria-label="Dashboard views">
+        <button id="dashboardViewButton" class="button view-tab active" type="button">Dashboard</button>
+        <button id="compareViewButton" class="button view-tab" type="button">Date Range Comparison Dashboard</button>
       </div>
     </div>
   </header>
