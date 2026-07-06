@@ -89,11 +89,12 @@
     }
 
     .view-tabs {
+      width: min(1440px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 0 0 10px;
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      grid-column: 1 / -1;
-      margin-top: 0;
     }
 
     .view-tab {
@@ -667,10 +668,10 @@
         <label>&nbsp;</label>
         <button id="themeToggle" class="button" type="button">Dark mode</button>
       </div>
-      <div class="view-tabs" aria-label="Dashboard views">
-        <button id="dashboardViewButton" class="button view-tab active" type="button">Dashboard</button>
-        <button id="compareViewButton" class="button view-tab" type="button">Date Range Comparison Dashboard</button>
-      </div>
+    </div>
+    <div class="view-tabs" aria-label="Dashboard views">
+      <button id="dashboardViewButton" class="button view-tab active" type="button">Dashboard</button>
+      <button id="compareViewButton" class="button view-tab" type="button">Date Range Comparison Dashboard</button>
     </div>
   </header>
 
