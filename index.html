@@ -99,17 +99,27 @@
       width: max-content;
       max-width: 100%;
       flex: 0 0 auto;
-      height: 32px;
-      padding: 0 11px;
-      border-radius: 7px;
+      height: 34px;
+      padding: 0 13px;
+      border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent-soft) 42%, var(--panel));
+      color: var(--ink);
+      box-shadow: 0 2px 8px rgba(22, 33, 43, 0.08);
       font-size: 12px;
       font-weight: 850;
     }
 
+    .view-tab:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
     .view-tab.active {
       border-color: var(--accent);
-      background: var(--accent-soft);
-      color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.24);
     }
 
     [data-view="compare"] .dashboard-filter {
