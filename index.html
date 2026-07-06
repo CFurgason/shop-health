@@ -102,7 +102,7 @@
       flex: 0 0 auto;
       height: 34px;
       padding: 0 13px;
-      border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--line));
+      border: 2px solid color-mix(in srgb, var(--accent) 42%, var(--line));
       border-radius: 8px;
       background: color-mix(in srgb, var(--accent-soft) 42%, var(--panel));
       color: var(--ink);
@@ -121,6 +121,15 @@
       background: var(--accent);
       color: #ffffff;
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.24);
+    }
+
+    .button.view-tab {
+      border-width: 2px;
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+    }
+
+    .button.view-tab.active {
+      border-color: var(--accent);
     }
 
     [data-view="compare"] .dashboard-filter {
@@ -149,7 +158,7 @@
     .select, .button {
       width: 100%;
       min-width: 0;
-      border: 1px solid var(--line);
+      border: 2px solid color-mix(in srgb, var(--accent) 22%, var(--line));
       border-radius: 7px;
       background: var(--panel);
       color: var(--ink);
@@ -186,7 +195,7 @@
       max-height: 330px;
       overflow: auto;
       padding: 8px;
-      border: 1px solid var(--line);
+      border: 2px solid color-mix(in srgb, var(--accent) 22%, var(--line));
       border-radius: 8px;
       background: var(--panel);
       box-shadow: var(--shadow);
@@ -773,6 +782,7 @@
               <tr>
                 <th data-sort="month">Month</th>
                 <th data-sort="revenue">Revenue</th>
+                <th data-sort="visits">Total Visits</th>
                 <th data-sort="avgRo">Average Revenue</th>
                 <th data-sort="calls">Calls</th>
                 <th data-sort="sentiment">Sentiment Score</th>
@@ -1200,6 +1210,7 @@
     function tier(key, value) {
       if (key === "revenue") return value > 80000 ? "green" : value >= 40000 ? "yellow" : "red";
       if (key === "avgRo") return value > 900 ? "green" : value >= 500 ? "yellow" : "red";
+      if (key === "visits") return value > 200 ? "green" : value >= 75 ? "yellow" : "red";
       if (key === "conversion") return value > 0.08 ? "green" : value >= 0.04 ? "yellow" : "red";
       if (key === "sentiment") return value > 0.82 ? "green" : value >= 0.75 ? "yellow" : "red";
       if (key === "changePercent") return value > 0 ? "green" : value === 0 ? "yellow" : "red";
@@ -1711,9 +1722,10 @@
       els.scorecardRows.innerHTML = data.map(row => `<tr>
         <td><strong>${esc(monthLabel(row.month))}</strong></td>
         <td class="tier-${tier("revenue", row.revenue)}">${esc(formatValue("revenue", row.revenue))}</td>
-        <td class="tier-${tier("avgRo", row.avgRo)}">${esc(formatValue("avgRo", row.avgRo))}</td>
+        <td class="tier-${tier("visits", row.visits)}">${esc(formatValue("visits", row.visits))}</td>
+        <td>${esc(formatValue("avgRo", row.avgRo))}</td>
         <td>${esc(formatValue("calls", row.calls))}</td>
-        <td class="tier-${tier("sentiment", row.sentiment || 0)}">${esc(formatValue("sentiment", row.sentiment))}</td>
+        <td>${esc(formatValue("sentiment", row.sentiment))}</td>
         <td>${esc(formatValue("newCustomers", row.newCustomers))}</td>
         <td>${esc(formatValue("returningCustomers", row.returningCustomers))}</td>
       </tr>`).join("");
