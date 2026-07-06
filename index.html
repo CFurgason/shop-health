@@ -88,6 +88,40 @@
       font-size: 12px;
     }
 
+    .view-tabs {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .view-tab {
+      width: auto;
+      height: 32px;
+      padding: 0 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .view-tab.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    [data-view="compare"] .dashboard-filter {
+      display: none;
+    }
+
+    [data-view="compare"] .filter-inner {
+      grid-template-columns: minmax(240px, 1fr) auto;
+    }
+
+    .dashboard-view[hidden],
+    .compare-view[hidden] {
+      display: none;
+    }
+
     label {
       display: block;
       margin: 0 0 5px;
@@ -254,6 +288,33 @@
       font-weight: 850;
     }
 
+    .compare-panel {
+      background: #eef6f3;
+      border-color: #b8d8ce;
+    }
+
+    .compare-view {
+      padding: 14px;
+      border: 1px solid #c9e1d9;
+      border-radius: 10px;
+      background: #e6f2ee;
+    }
+
+    [data-theme="dark"] .compare-panel {
+      background: #142621;
+      border-color: #31564d;
+    }
+
+    [data-theme="dark"] .compare-view {
+      background: #10211d;
+      border-color: #2b4d45;
+    }
+
+    .compare-panel .panel-head {
+      background: color-mix(in srgb, var(--green-bg) 42%, transparent);
+      border-bottom-color: color-mix(in srgb, var(--green) 24%, var(--line));
+    }
+
     .compare-body {
       display: grid;
       gap: 14px;
@@ -274,9 +335,9 @@
     }
 
     .compare-card {
-      border: 1px solid var(--line);
+      border: 1px solid color-mix(in srgb, var(--green) 18%, var(--line));
       border-radius: 8px;
-      background: var(--panel-2);
+      background: color-mix(in srgb, var(--panel) 78%, transparent);
       padding: 12px;
       display: grid;
       gap: 8px;
@@ -310,15 +371,77 @@
     }
 
     .compare-chart {
-      height: 360px;
-      padding: 6px 0 0;
-      overflow-x: auto;
-      overflow-y: hidden;
+      display: grid;
+      gap: 10px;
     }
 
-    .compare-bar-a { fill: #2563eb; }
-    .compare-bar-b { fill: #16a34a; }
-    .compare-zero { stroke: var(--line); stroke-width: 1; }
+    .compare-row {
+      display: grid;
+      grid-template-columns: minmax(128px, 0.38fr) minmax(0, 1fr) 72px;
+      gap: 12px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--green) 14%, var(--line));
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel) 68%, transparent);
+    }
+
+    .compare-row-label {
+      font-size: 12px;
+      font-weight: 850;
+      color: var(--ink);
+    }
+
+    .compare-bars {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .compare-bar-line {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr) minmax(66px, auto);
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .compare-bar-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .compare-track {
+      height: 9px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--line) 64%, transparent);
+      overflow: hidden;
+    }
+
+    .compare-fill {
+      height: 100%;
+      min-width: 2px;
+      border-radius: inherit;
+    }
+
+    .compare-fill-a { background: #2563eb; }
+    .compare-fill-b { background: #16a34a; }
+
+    .compare-bar-value {
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .compare-row-delta {
+      justify-self: end;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
 
     .chart-grid {
       display: grid;
@@ -490,12 +613,16 @@
       .compare-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .compare-controls > :first-child { grid-column: 1 / -1; }
       .compare-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .compare-row { grid-template-columns: 112px minmax(0, 1fr) 64px; }
       .chart-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 720px) {
       .filter-inner, .scorecards, .compare-controls, .compare-summary { grid-template-columns: 1fr; }
       .compare-controls > :first-child { grid-column: auto; }
+      .compare-row { grid-template-columns: 1fr; gap: 8px; }
+      .compare-row-delta { justify-self: start; }
+      .compare-bar-line { grid-template-columns: 50px minmax(0, 1fr) minmax(60px, auto); }
       .chart { height: 280px; }
     }
   </style>
@@ -506,19 +633,23 @@
       <div class="brand">
         <h1>Shop Health Dashboard</h1>
         <p id="dataStatus">Monthly totals</p>
+        <div class="view-tabs" aria-label="Dashboard views">
+          <button id="dashboardViewButton" class="button view-tab active" type="button">Dashboard</button>
+          <button id="compareViewButton" class="button view-tab" type="button">Date Compare</button>
+        </div>
       </div>
-      <div>
+      <div class="dashboard-filter">
         <label for="shopButton">Shops</label>
         <div id="shopDropdown" class="multi">
           <button id="shopButton" class="button multi-button" type="button">All shops</button>
           <div id="shopPanel" class="multi-panel"></div>
         </div>
       </div>
-      <div>
+      <div class="dashboard-filter">
         <label for="startMonth">Start Month</label>
         <select id="startMonth" class="select"></select>
       </div>
-      <div>
+      <div class="dashboard-filter">
         <label for="endMonth">End Month</label>
         <select id="endMonth" class="select"></select>
       </div>
@@ -530,10 +661,8 @@
   </header>
 
   <main>
-    <section id="scorecards" class="scorecards" aria-label="Scorecard row"></section>
-
-    <section class="chart-grid">
-      <section class="panel full">
+    <section id="compareView" class="compare-view" hidden>
+      <section class="panel full compare-panel">
         <div class="panel-head">
           <h2>Compare Date Ranges</h2>
           <div id="compareStatus" class="subtle"></div>
@@ -565,7 +694,12 @@
           <div id="compareChart" class="compare-chart"></div>
         </div>
       </section>
+    </section>
 
+    <section id="dashboardView" class="dashboard-view">
+      <section id="scorecards" class="scorecards" aria-label="Scorecard row"></section>
+
+      <section class="chart-grid">
       <section class="panel full">
         <div class="panel-head">
           <h2>Monthly Sentiment Score + 3-Month Trend</h2>
@@ -636,6 +770,7 @@
           </table>
         </div>
       </section>
+      </section>
     </section>
   </main>
 
@@ -644,6 +779,10 @@
 
     const els = {
       dataStatus: document.getElementById("dataStatus"),
+      dashboardViewButton: document.getElementById("dashboardViewButton"),
+      compareViewButton: document.getElementById("compareViewButton"),
+      dashboardView: document.getElementById("dashboardView"),
+      compareView: document.getElementById("compareView"),
       shopDropdown: document.getElementById("shopDropdown"),
       shopButton: document.getElementById("shopButton"),
       shopPanel: document.getElementById("shopPanel"),
@@ -676,6 +815,7 @@
     };
 
     const state = {
+      view: window.location.hash === "#compare" ? "compare" : "dashboard",
       selectedShops: [],
       startMonth: "",
       endMonth: "",
@@ -1094,6 +1234,22 @@
       }
     }
 
+    function renderView() {
+      const compareActive = state.view === "compare";
+      document.body.dataset.view = state.view;
+      els.dashboardView.hidden = compareActive;
+      els.compareView.hidden = !compareActive;
+      els.dashboardViewButton.classList.toggle("active", !compareActive);
+      els.compareViewButton.classList.toggle("active", compareActive);
+    }
+
+    function setView(view) {
+      state.view = view;
+      renderView();
+      const hash = view === "compare" ? "#compare" : "#dashboard";
+      if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
+    }
+
     function renderScorecards() {
       const currentMonth = state.endMonth;
       const previous = previousMonth(currentMonth);
@@ -1201,35 +1357,34 @@
         </article>`;
       }).join("");
 
-      const width = 980;
-      const rowHeight = 36;
-      const height = 38 + compareMetrics.length * rowHeight;
-      const pad = { left: 158, right: 120, top: 20, bottom: 18 };
-      const rowsSvg = compareMetrics.map((metric, index) => {
-        const y = pad.top + index * rowHeight;
+      els.compareChart.innerHTML = compareMetrics.map(metric => {
         const rowMax = Math.max(1, a[metric.key] || 0, b[metric.key] || 0);
-        const rowScale = value => pad.left + ((value || 0) / rowMax) * (width - pad.left - pad.right);
-        const aWidth = rowScale(a[metric.key]) - pad.left;
-        const bWidth = rowScale(b[metric.key]) - pad.left;
+        const aWidth = ((a[metric.key] || 0) / rowMax) * 100;
+        const bWidth = ((b[metric.key] || 0) / rowMax) * 100;
         const delta = deltaPercent(a[metric.key], b[metric.key]);
-        const deltaLabel = delta === null ? "" : `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`;
-        return `<text class="axis-label" x="${pad.left - 10}" y="${y + 18}" text-anchor="end">${esc(metric.label)}</text>
-          <rect class="compare-bar-a" x="${pad.left}" y="${y + 4}" width="${aWidth}" height="10" rx="3">
-            <title>${metric.label} | Range A | ${metric.format(a[metric.key])}</title>
-          </rect>
-          <rect class="compare-bar-b" x="${pad.left}" y="${y + 18}" width="${bWidth}" height="10" rx="3">
-            <title>${metric.label} | Range B | ${metric.format(b[metric.key])}</title>
-          </rect>
-          <text class="axis-label" x="${Math.max(rowScale(a[metric.key]), rowScale(b[metric.key])) + 8}" y="${y + 22}">${esc(deltaLabel)}</text>`;
+        const deltaClass = delta === null ? "" : delta >= 0 ? "tier-green" : "tier-red";
+        const deltaLabel = delta === null ? "N/A" : `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`;
+        return `<div class="compare-row">
+          <div class="compare-row-label">${esc(metric.label)}</div>
+          <div class="compare-bars">
+            <div class="compare-bar-line">
+              <div class="compare-bar-label">Range A</div>
+              <div class="compare-track">
+                <div class="compare-fill compare-fill-a" style="width:${aWidth.toFixed(1)}%"></div>
+              </div>
+              <div class="compare-bar-value">${esc(metric.format(a[metric.key]))}</div>
+            </div>
+            <div class="compare-bar-line">
+              <div class="compare-bar-label">Range B</div>
+              <div class="compare-track">
+                <div class="compare-fill compare-fill-b" style="width:${bWidth.toFixed(1)}%"></div>
+              </div>
+              <div class="compare-bar-value">${esc(metric.format(b[metric.key]))}</div>
+            </div>
+          </div>
+          <div class="compare-row-delta ${deltaClass}">${esc(deltaLabel)}</div>
+        </div>`;
       }).join("");
-      els.compareChart.innerHTML = `<svg class="wide-chart" style="width:${width}px; min-width:${width}px;" viewBox="0 0 ${width} ${height}" role="img">
-        <line class="compare-zero" x1="${pad.left}" x2="${pad.left}" y1="${pad.top - 4}" y2="${height - pad.bottom}"></line>
-        <text class="axis-label" x="${pad.left}" y="12">Range A</text>
-        <rect class="compare-bar-a" x="${pad.left + 58}" y="4" width="16" height="8" rx="2"></rect>
-        <text class="axis-label" x="${pad.left + 84}" y="12">Range B</text>
-        <rect class="compare-bar-b" x="${pad.left + 142}" y="4" width="16" height="8" rx="2"></rect>
-        ${rowsSvg}
-      </svg>`;
     }
 
     function svgScales(width, height, values, pad = { left: 62, right: 18, top: 18, bottom: 38 }) {
@@ -1571,9 +1726,19 @@
     }
 
     renderControls();
+    renderView();
     render();
     refreshFromSheet();
     if (sheetCsvUrl()) setInterval(refreshFromSheet, GOOGLE_SHEET_REFRESH_MS);
+
+    els.dashboardViewButton.addEventListener("click", () => setView("dashboard"));
+
+    els.compareViewButton.addEventListener("click", () => setView("compare"));
+
+    window.addEventListener("hashchange", () => {
+      state.view = window.location.hash === "#compare" ? "compare" : "dashboard";
+      renderView();
+    });
 
     els.shopButton.addEventListener("click", () => {
       els.shopDropdown.classList.toggle("open");
