@@ -181,7 +181,7 @@
 
     .scorecards {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
       margin-bottom: 14px;
     }
@@ -253,6 +253,72 @@
       font-size: 12px;
       font-weight: 850;
     }
+
+    .compare-body {
+      display: grid;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .compare-controls {
+      display: grid;
+      grid-template-columns: minmax(240px, 1.4fr) repeat(4, minmax(120px, 0.7fr));
+      gap: 10px;
+      align-items: end;
+    }
+
+    .compare-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .compare-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      min-height: 128px;
+    }
+
+    .compare-card-title {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .compare-values {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .compare-value-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .compare-value {
+      margin-top: 2px;
+      font-size: 18px;
+      font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+
+    .compare-chart {
+      height: 360px;
+      padding: 6px 0 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .compare-bar-a { fill: #2563eb; }
+    .compare-bar-b { fill: #16a34a; }
+    .compare-zero { stroke: var(--line); stroke-width: 1; }
 
     .chart-grid {
       display: grid;
@@ -328,6 +394,9 @@
     .bar-star-3 { fill: #ca8a04; }
     .bar-star-4 { fill: #16a34a; }
     .bar-star-5 { fill: #2563eb; }
+    .month-group-band { fill: var(--panel-2); opacity: 0.58; }
+    .month-group-separator { stroke: var(--line); stroke-width: 1; }
+    .month-group-label { fill: var(--ink); font-size: 11px; font-weight: 800; }
     .swatch.bar-calls, .swatch.bar-new-vehicle { background: #60a5fa; }
     .swatch.bar-visits, .swatch.bar-new-customer { background: #2563eb; }
     .swatch.bar-ro { background: #1e40af; }
@@ -418,11 +487,15 @@
 
       .brand { grid-column: 1 / -1; }
       .scorecards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .compare-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .compare-controls > :first-child { grid-column: 1 / -1; }
+      .compare-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .chart-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 720px) {
-      .filter-inner, .scorecards { grid-template-columns: 1fr; }
+      .filter-inner, .scorecards, .compare-controls, .compare-summary { grid-template-columns: 1fr; }
+      .compare-controls > :first-child { grid-column: auto; }
       .chart { height: 280px; }
     }
   </style>
@@ -451,10 +524,6 @@
       </div>
       <div>
         <label>&nbsp;</label>
-        <button id="compareToggle" class="button" type="button">Compare prior</button>
-      </div>
-      <div>
-        <label>&nbsp;</label>
         <button id="themeToggle" class="button" type="button">Dark mode</button>
       </div>
     </div>
@@ -464,6 +533,39 @@
     <section id="scorecards" class="scorecards" aria-label="Scorecard row"></section>
 
     <section class="chart-grid">
+      <section class="panel full">
+        <div class="panel-head">
+          <h2>Compare Date Ranges</h2>
+          <div id="compareStatus" class="subtle"></div>
+        </div>
+        <div class="compare-body">
+          <div class="compare-controls">
+            <div>
+              <label for="compareShop">Shop</label>
+              <select id="compareShop" class="select"></select>
+            </div>
+            <div>
+              <label for="compareAStart">Range A Start</label>
+              <select id="compareAStart" class="select"></select>
+            </div>
+            <div>
+              <label for="compareAEnd">Range A End</label>
+              <select id="compareAEnd" class="select"></select>
+            </div>
+            <div>
+              <label for="compareBStart">Range B Start</label>
+              <select id="compareBStart" class="select"></select>
+            </div>
+            <div>
+              <label for="compareBEnd">Range B End</label>
+              <select id="compareBEnd" class="select"></select>
+            </div>
+          </div>
+          <div id="compareSummary" class="compare-summary"></div>
+          <div id="compareChart" class="compare-chart"></div>
+        </div>
+      </section>
+
       <section class="panel full">
         <div class="panel-head">
           <h2>Monthly Sentiment Score + 3-Month Trend</h2>
@@ -547,7 +649,14 @@
       shopPanel: document.getElementById("shopPanel"),
       startMonth: document.getElementById("startMonth"),
       endMonth: document.getElementById("endMonth"),
-      compareToggle: document.getElementById("compareToggle"),
+      compareShop: document.getElementById("compareShop"),
+      compareAStart: document.getElementById("compareAStart"),
+      compareAEnd: document.getElementById("compareAEnd"),
+      compareBStart: document.getElementById("compareBStart"),
+      compareBEnd: document.getElementById("compareBEnd"),
+      compareStatus: document.getElementById("compareStatus"),
+      compareSummary: document.getElementById("compareSummary"),
+      compareChart: document.getElementById("compareChart"),
       themeToggle: document.getElementById("themeToggle"),
       scorecards: document.getElementById("scorecards"),
       sentimentChart: document.getElementById("sentimentChart"),
@@ -570,7 +679,11 @@
       selectedShops: [],
       startMonth: "",
       endMonth: "",
-      compare: true,
+      compareShop: "",
+      compareAStart: "",
+      compareAEnd: "",
+      compareBStart: "",
+      compareBEnd: "",
       sort: "month",
       sortDir: "asc",
       dark: false
@@ -780,6 +893,16 @@
       state.selectedShops = state.selectedShops.filter(shop => shops.includes(shop));
       if (!months.includes(state.startMonth)) state.startMonth = months[0] || "";
       if (!months.includes(state.endMonth)) state.endMonth = months[months.length - 1] || "";
+      if (!shops.includes(state.compareShop)) state.compareShop = state.selectedShops.length === 1 ? state.selectedShops[0] : shops[0] || "";
+      const recentRangeLength = Math.min(3, months.length);
+      const defaultAStart = months[Math.max(0, months.length - recentRangeLength)] || "";
+      const defaultAEnd = months[months.length - 1] || "";
+      const defaultBEndIndex = Math.max(0, months.length - recentRangeLength - 1);
+      const defaultBStartIndex = Math.max(0, defaultBEndIndex - recentRangeLength + 1);
+      if (!months.includes(state.compareAStart)) state.compareAStart = defaultAStart;
+      if (!months.includes(state.compareAEnd)) state.compareAEnd = defaultAEnd;
+      if (!months.includes(state.compareBStart)) state.compareBStart = months[defaultBStartIndex] || defaultAStart;
+      if (!months.includes(state.compareBEnd)) state.compareBEnd = months[defaultBEndIndex] || defaultAEnd;
     }
 
     async function refreshFromSheet() {
@@ -836,6 +959,12 @@
       return rows.filter(row => row.month === month && shopSet.has(row.shop));
     }
 
+    function rowsForShopRange(shop, startMonth, endMonth) {
+      const start = startMonth <= endMonth ? startMonth : endMonth;
+      const end = startMonth <= endMonth ? endMonth : startMonth;
+      return rows.filter(row => row.shop === shop && row.month >= start && row.month <= end);
+    }
+
     function selectedRowsAllMonths() {
       const shopSet = new Set(selectedShopList());
       return rows.filter(row => shopSet.has(row.shop));
@@ -844,18 +973,6 @@
     function previousMonth(month) {
       const index = months.indexOf(month);
       return index > 0 ? months[index - 1] : null;
-    }
-
-    function priorRows() {
-      if (!state.compare) return [];
-      const current = selectedMonths();
-      if (!current.length) return [];
-      const startIndex = months.indexOf(current[0]);
-      const priorStart = Math.max(0, startIndex - current.length);
-      const prior = months.slice(priorStart, startIndex);
-      const priorSet = new Set(prior);
-      const shopSet = new Set(selectedShopList());
-      return rows.filter(row => priorSet.has(row.month) && shopSet.has(row.shop));
     }
 
     function summarize(source) {
@@ -937,6 +1054,7 @@
     }
 
     function deltaPercent(current, previous) {
+      if (current === null || current === undefined) return null;
       if (previous === null || previous === undefined || previous === 0) return null;
       return ((current - previous) / Math.abs(previous)) * 100;
     }
@@ -945,9 +1063,20 @@
       els.shopPanel.innerHTML = shops.map(shop => `<label class="check-row"><input type="checkbox" value="${esc(shop)}"> <span>${esc(shop)}</span></label>`).join("");
       els.startMonth.innerHTML = months.map(month => `<option value="${month}">${monthLabel(month)}</option>`).join("");
       els.endMonth.innerHTML = months.map(month => `<option value="${month}">${monthLabel(month)}</option>`).join("");
+      els.compareShop.innerHTML = shops.map(shop => `<option value="${esc(shop)}">${esc(shop)}</option>`).join("");
+      [els.compareAStart, els.compareAEnd, els.compareBStart, els.compareBEnd].forEach(select => {
+        select.innerHTML = months.map(month => `<option value="${month}">${monthLabel(month)}</option>`).join("");
+      });
       els.startMonth.value = state.startMonth;
       els.endMonth.value = state.endMonth;
-      els.compareToggle.classList.toggle("active", state.compare);
+      els.compareShop.value = state.compareShop;
+      els.compareAStart.value = state.compareAStart;
+      els.compareAEnd.value = state.compareAEnd;
+      els.compareBStart.value = state.compareBStart;
+      els.compareBEnd.value = state.compareBEnd;
+      [...els.shopPanel.querySelectorAll("input")].forEach(input => {
+        input.checked = state.selectedShops.includes(input.value);
+      });
       els.themeToggle.textContent = state.dark ? "Light mode" : "Dark mode";
       els.dataStatus.textContent = months.length
         ? `Updated graph set | ${number.format(rows.length)} monthly rows | ${monthLabel(months[0])} to ${monthLabel(months[months.length - 1])}`
@@ -980,13 +1109,6 @@
           value: current.sentiment,
           delta: sentimentChange,
           deltaLabel: previous ? `vs ${monthLabel(previous)}` : "No previous month"
-        },
-        {
-          title: "Sentiment Change",
-          key: "changePercent",
-          value: sentimentChange,
-          delta: null,
-          deltaLabel: previous ? `${formatValue("sentiment", prior.sentiment)} to ${formatValue("sentiment", current.sentiment)}` : "No previous month"
         },
         {
           title: "Avg RO All Months",
@@ -1025,6 +1147,89 @@
           <div class="delta ${deltaClass}">${deltaText}</div>
         </article>`;
       }).join("");
+    }
+
+    const compareMetrics = [
+      { key: "revenue", label: "Revenue", format: value => compactMoney.format(value || 0) },
+      { key: "avgRo", label: "Avg RO", format: value => money.format(value || 0) },
+      { key: "calls", label: "Calls", format: value => number.format(value || 0) },
+      { key: "visits", label: "BDC Visits", format: value => number.format(value || 0) },
+      { key: "appointments", label: "Appointments", format: value => number.format(value || 0) },
+      { key: "sentiment", label: "Sentiment", format: value => value === null ? "N/A" : Number(value).toFixed(3) },
+      { key: "newCustomers", label: "New Customers", format: value => number.format(value || 0) },
+      { key: "returningCustomers", label: "Returning Customers", format: value => number.format(value || 0) }
+    ];
+
+    function rangeLabel(startMonth, endMonth) {
+      const start = startMonth <= endMonth ? startMonth : endMonth;
+      const end = startMonth <= endMonth ? endMonth : startMonth;
+      return start === end ? monthLabel(start) : `${monthLabel(start)} - ${monthLabel(end)}`;
+    }
+
+    function renderRangeCompare() {
+      if (!state.compareShop || !months.length) {
+        els.compareStatus.textContent = "No shop data";
+        els.compareSummary.innerHTML = "";
+        els.compareChart.innerHTML = "";
+        return;
+      }
+
+      const a = summarize(rowsForShopRange(state.compareShop, state.compareAStart, state.compareAEnd));
+      const b = summarize(rowsForShopRange(state.compareShop, state.compareBStart, state.compareBEnd));
+      const labelA = rangeLabel(state.compareAStart, state.compareAEnd);
+      const labelB = rangeLabel(state.compareBStart, state.compareBEnd);
+      els.compareStatus.textContent = `${state.compareShop} | A: ${labelA} | B: ${labelB}`;
+
+      els.compareSummary.innerHTML = compareMetrics.slice(0, 4).map(metric => {
+        const delta = deltaPercent(a[metric.key], b[metric.key]);
+        const deltaClass = delta === null ? "" : delta >= 0 ? "tier-green" : "tier-red";
+        const arrow = delta === null ? "" : delta >= 0 ? "&#9650;" : "&#9660;";
+        const deltaText = delta === null ? "No prior value" : `${arrow} ${Math.abs(delta).toFixed(1)}% vs B`;
+        return `<article class="compare-card">
+          <div class="compare-card-title">${esc(metric.label)}</div>
+          <div class="compare-values">
+            <div>
+              <div class="compare-value-label">Range A</div>
+              <div class="compare-value">${esc(metric.format(a[metric.key]))}</div>
+            </div>
+            <div>
+              <div class="compare-value-label">Range B</div>
+              <div class="compare-value">${esc(metric.format(b[metric.key]))}</div>
+            </div>
+          </div>
+          <div class="delta ${deltaClass}">${deltaText}</div>
+        </article>`;
+      }).join("");
+
+      const width = 980;
+      const rowHeight = 36;
+      const height = 38 + compareMetrics.length * rowHeight;
+      const pad = { left: 158, right: 120, top: 20, bottom: 18 };
+      const rowsSvg = compareMetrics.map((metric, index) => {
+        const y = pad.top + index * rowHeight;
+        const rowMax = Math.max(1, a[metric.key] || 0, b[metric.key] || 0);
+        const rowScale = value => pad.left + ((value || 0) / rowMax) * (width - pad.left - pad.right);
+        const aWidth = rowScale(a[metric.key]) - pad.left;
+        const bWidth = rowScale(b[metric.key]) - pad.left;
+        const delta = deltaPercent(a[metric.key], b[metric.key]);
+        const deltaLabel = delta === null ? "" : `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`;
+        return `<text class="axis-label" x="${pad.left - 10}" y="${y + 18}" text-anchor="end">${esc(metric.label)}</text>
+          <rect class="compare-bar-a" x="${pad.left}" y="${y + 4}" width="${aWidth}" height="10" rx="3">
+            <title>${metric.label} | Range A | ${metric.format(a[metric.key])}</title>
+          </rect>
+          <rect class="compare-bar-b" x="${pad.left}" y="${y + 18}" width="${bWidth}" height="10" rx="3">
+            <title>${metric.label} | Range B | ${metric.format(b[metric.key])}</title>
+          </rect>
+          <text class="axis-label" x="${Math.max(rowScale(a[metric.key]), rowScale(b[metric.key])) + 8}" y="${y + 22}">${esc(deltaLabel)}</text>`;
+      }).join("");
+      els.compareChart.innerHTML = `<svg class="wide-chart" style="width:${width}px; min-width:${width}px;" viewBox="0 0 ${width} ${height}" role="img">
+        <line class="compare-zero" x1="${pad.left}" x2="${pad.left}" y1="${pad.top - 4}" y2="${height - pad.bottom}"></line>
+        <text class="axis-label" x="${pad.left}" y="12">Range A</text>
+        <rect class="compare-bar-a" x="${pad.left + 58}" y="4" width="16" height="8" rx="2"></rect>
+        <text class="axis-label" x="${pad.left + 84}" y="12">Range B</text>
+        <rect class="compare-bar-b" x="${pad.left + 142}" y="4" width="16" height="8" rx="2"></rect>
+        ${rowsSvg}
+      </svg>`;
     }
 
     function svgScales(width, height, values, pad = { left: 62, right: 18, top: 18, bottom: 38 }) {
@@ -1256,9 +1461,9 @@
 
     function renderReviewsChart() {
       const data = byMonth(selectedRows());
-      const width = chartWidth(980, 76);
+      const width = chartWidth(980, 124);
       const height = 280;
-      const pad = { left: 54, right: 14, top: 18, bottom: 42 };
+      const pad = { left: 54, right: 18, top: 18, bottom: 50 };
       const max = Math.max(0, ...data.flatMap(row => reviewFields.map(field => row[field.key])));
       els.reviewsLegend.innerHTML = reviewFields.map(field => `<span><i class="swatch ${field.cls}"></i>${field.label}</span>`).join("");
 
@@ -1271,22 +1476,36 @@
 
       const y = value => height - pad.bottom - (value / max) * (height - pad.top - pad.bottom);
       const groupWidth = (width - pad.left - pad.right) / Math.max(1, data.length);
-      const gap = Math.max(1, Math.min(3, groupWidth / 24));
-      const barWidth = Math.max(4, Math.min(14, (groupWidth * 0.72) / reviewFields.length));
-      const bars = data.map((row, index) => {
+      const groupPadding = Math.max(10, Math.min(18, groupWidth * 0.14));
+      const gap = Math.max(2, Math.min(4, groupWidth / 28));
+      const barWidth = Math.max(6, Math.min(16, (groupWidth - groupPadding * 2 - gap * (reviewFields.length - 1)) / reviewFields.length));
+      const shortLabel = month => {
+        const [year, monthNumber] = month.split("-").map(Number);
+        const date = new Date(year, monthNumber - 1, 1);
+        return `${date.toLocaleDateString("en-US", { month: "short" })} '${String(year).slice(-2)}`;
+      };
+      const groups = data.map((row, index) => {
+        const groupX = pad.left + index * groupWidth;
         const groupBarWidth = reviewFields.length * barWidth + (reviewFields.length - 1) * gap;
-        const baseX = pad.left + index * groupWidth + (groupWidth - groupBarWidth) / 2;
+        const baseX = groupX + (groupWidth - groupBarWidth) / 2;
         const monthBars = reviewFields.map((field, barIndex) => {
           const value = row[field.key];
           const barHeight = height - pad.bottom - y(value);
-          return `<rect class="${field.cls}" x="${baseX + barIndex * (barWidth + gap)}" y="${y(value)}" width="${barWidth}" height="${barHeight}">
+          return `<rect class="${field.cls}" x="${baseX + barIndex * (barWidth + gap)}" y="${y(value)}" width="${barWidth}" height="${barHeight}" rx="2">
             <title>${field.label} | ${monthLabel(row.month)} | ${number.format(value)}</title>
           </rect>`;
         }).join("");
-        return monthBars + `<text class="axis-label" x="${pad.left + index * groupWidth + groupWidth / 2}" y="${height - 12}" text-anchor="middle">${esc(monthLabel(row.month).slice(0, 3))}</text>`;
+        const band = index % 2 === 0
+          ? `<rect class="month-group-band" x="${groupX + 3}" y="${pad.top}" width="${Math.max(0, groupWidth - 6)}" height="${height - pad.top - pad.bottom + 24}" rx="5"></rect>`
+          : "";
+        const separator = index > 0
+          ? `<line class="month-group-separator" x1="${groupX}" x2="${groupX}" y1="${pad.top}" y2="${height - 18}"></line>`
+          : "";
+        const labelX = groupX + groupWidth / 2;
+        return `${band}${separator}${monthBars}<text class="month-group-label" x="${labelX}" y="${height - 14}" text-anchor="middle">${esc(shortLabel(row.month))}</text>`;
       }).join("");
       const fakeScale = { min: 0, max, pad, y };
-      els.reviewsChart.innerHTML = chartSvg(width, height, `${grid(width, height, fakeScale, value => number.format(value))}${bars}`, "");
+      els.reviewsChart.innerHTML = chartSvg(width, height, `${grid(width, height, fakeScale, value => number.format(value))}${groups}`, "");
     }
 
     function renderRanking() {
@@ -1347,6 +1566,7 @@
       renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 260 });
       renderMetricTrend(els.appointmentsChart, els.appointmentsLegend, "Appointments", "appointments", value => number.format(value), { height: 260, emptyWhenZero: true });
       renderReviewsChart();
+      renderRangeCompare();
       renderTable();
     }
 
@@ -1365,7 +1585,9 @@
 
     els.shopPanel.addEventListener("change", () => {
       state.selectedShops = [...els.shopPanel.querySelectorAll("input:checked")].map(input => input.value);
+      if (state.selectedShops.length === 1) state.compareShop = state.selectedShops[0];
       updateShopButton();
+      renderControls();
       render();
     });
 
@@ -1379,10 +1601,21 @@
       render();
     });
 
-    els.compareToggle.addEventListener("click", () => {
-      state.compare = !state.compare;
-      els.compareToggle.classList.toggle("active", state.compare);
-      render();
+    els.compareShop.addEventListener("change", event => {
+      state.compareShop = event.target.value;
+      renderRangeCompare();
+    });
+
+    [
+      [els.compareAStart, "compareAStart"],
+      [els.compareAEnd, "compareAEnd"],
+      [els.compareBStart, "compareBStart"],
+      [els.compareBEnd, "compareBEnd"]
+    ].forEach(([select, key]) => {
+      select.addEventListener("change", event => {
+        state[key] = event.target.value;
+        renderRangeCompare();
+      });
     });
 
     els.themeToggle.addEventListener("click", () => {
@@ -1407,10 +1640,12 @@
       const row = event.target.closest("[data-shop]");
       if (!row) return;
       state.selectedShops = [row.dataset.shop];
+      state.compareShop = row.dataset.shop;
       [...els.shopPanel.querySelectorAll("input")].forEach(input => {
         input.checked = input.value === row.dataset.shop;
       });
       updateShopButton();
+      renderControls();
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
