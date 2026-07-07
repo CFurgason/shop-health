@@ -527,6 +527,7 @@
     }
     .line { fill: none; stroke-width: 3.8; }
     .line.dashed { stroke-dasharray: 7 5; opacity: 0.9; stroke-width: 3; }
+    .line.rolling-6 { stroke-dasharray: 2 6; opacity: 0.95; stroke-width: 3; }
     .band { fill: var(--accent); opacity: 0.09; }
     .bar-calls { fill: #93c5fd; }
     .bar-visits { fill: #2563eb; }
@@ -725,7 +726,7 @@
       <section class="chart-grid">
       <section class="panel full">
         <div class="panel-head">
-          <h2>Monthly Sentiment Score + 3-Month Trend</h2>
+          <h2>Monthly Sentiment Score + Rolling Trends</h2>
           <div id="sentimentLegend" class="legend"></div>
         </div>
         <div id="sentimentChart" class="chart"></div>
@@ -733,7 +734,7 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Monthly BDC Visits + 3-Month Trend</h2>
+          <h2>Monthly BDC Visits + Rolling Trends</h2>
           <div id="visitsLegend" class="legend"></div>
         </div>
         <div id="visitsChart" class="chart short"></div>
@@ -741,7 +742,7 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Monthly Revenue Growth %</h2>
+          <h2>Monthly Revenue Growth % + Rolling Trends</h2>
           <div id="growthLegend" class="legend"></div>
         </div>
         <div id="growthChart" class="chart short"></div>
@@ -749,7 +750,7 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Monthly Call Volume + 3-Month Trend</h2>
+          <h2>Monthly Call Volume + Rolling Trends</h2>
           <div id="callsLegend" class="legend"></div>
         </div>
         <div id="callsChart" class="chart short"></div>
@@ -757,7 +758,7 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Monthly Appointments + 3-Month Trend</h2>
+          <h2>Monthly Appointments + Rolling Trends</h2>
           <div id="appointmentsLegend" class="legend"></div>
         </div>
         <div id="appointmentsChart" class="chart short"></div>
@@ -1475,14 +1476,20 @@
       const height = options.height || 280;
       const selected = selectedShopList();
       const series = selected.map(shop => ({ shop, points: byMonthShop(shop) }));
-      const allValues = series.flatMap(item => item.points.map(point => point[key])).filter(value => value !== null);
+      const allValues = series.flatMap(item => [
+        ...item.points.map(point => point[key]),
+        ...rollingAverage(item.points, key, 3),
+        ...rollingAverage(item.points, key, 6)
+      ]).filter(value => value !== null);
       const scale = svgScales(width, height, allValues);
       const labels = monthAxis(width, height, scale);
       const lines = series.map((item, index) => {
         const color = colors[index % colors.length];
         const path = pathFrom(item.points, key, scale);
-        const rolling = rollingAverage(item.points, key).map((value, pointIndex) => ({ month: item.points[pointIndex].month, [key]: value }));
-        const rollingPath = pathFrom(rolling, key, scale);
+        const rolling3 = rollingAverage(item.points, key, 3).map((value, pointIndex) => ({ month: item.points[pointIndex].month, [key]: value }));
+        const rolling6 = rollingAverage(item.points, key, 6).map((value, pointIndex) => ({ month: item.points[pointIndex].month, [key]: value }));
+        const rolling3Path = pathFrom(rolling3, key, scale);
+        const rolling6Path = pathFrom(rolling6, key, scale);
         const points = item.points.map((point, pointIndex) => {
           const value = point[key];
           if (value === null || !Number.isFinite(value)) return "";
@@ -1491,7 +1498,8 @@
           </circle>`;
         }).join("");
         return `${path ? `<path class="line" d="${path}" stroke="${color}"></path>` : ""}
-          ${rollingPath ? `<path class="line dashed" d="${rollingPath}" stroke="${color}"></path>` : ""}
+          ${rolling3Path ? `<path class="line dashed" d="${rolling3Path}" stroke="${color}"></path>` : ""}
+          ${rolling6Path ? `<path class="line rolling-6" d="${rolling6Path}" stroke="${color}"></path>` : ""}
           ${points}`;
       }).join("");
 
@@ -1515,11 +1523,14 @@
       const height = options.height || 280;
       const data = byMonth(selectedRows());
       const values = data.map(row => row[key]);
-      const rollingValues = rollingAverage(data, key, 3);
-      const rolling = rollingValues.map((value, index) => ({ month: data[index].month, [key]: value }));
-      const allValues = [...values, ...rollingValues].filter(value => value !== null && Number.isFinite(value));
+      const rolling3Values = rollingAverage(data, key, 3);
+      const rolling6Values = rollingAverage(data, key, 6);
+      const rolling3 = rolling3Values.map((value, index) => ({ month: data[index].month, [key]: value }));
+      const rolling6 = rolling6Values.map((value, index) => ({ month: data[index].month, [key]: value }));
+      const allValues = [...values, ...rolling3Values, ...rolling6Values].filter(value => value !== null && Number.isFinite(value));
       legendTarget.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly value</span>
-        <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>`;
+        <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>
+        <span><i class="swatch" style="background:#ca8a04"></i>6-month rolling avg</span>`;
       if (options.emptyWhenZero && !values.some(value => Number.isFinite(value) && value > 0)) {
         target.innerHTML = chartSvg(width, height, `
           <text class="axis-label" x="${width / 2}" y="${height / 2}" text-anchor="middle">No ${esc(title.toLowerCase())} data for this selection</text>
@@ -1528,7 +1539,8 @@
       }
       const scale = svgScales(width, height, allValues);
       const mainPath = pathFrom(data, key, scale);
-      const rollingPath = pathFrom(rolling, key, scale);
+      const rolling3Path = pathFrom(rolling3, key, scale);
+      const rolling6Path = pathFrom(rolling6, key, scale);
       const points = data.map((point, index) => {
         const value = point[key];
         if (value === null || !Number.isFinite(value)) return "";
@@ -1546,7 +1558,8 @@
         ${options.band ? renderBand(scale, width, height, options.band[0], options.band[1]) : ""}
         ${monthAxis(width, height, scale)}
         ${mainPath ? `<path class="line" d="${mainPath}" stroke="#2563eb"></path>` : ""}
-        ${rollingPath ? `<path class="line dashed" d="${rollingPath}" stroke="#16a34a"></path>` : ""}
+        ${rolling3Path ? `<path class="line dashed" d="${rolling3Path}" stroke="#16a34a"></path>` : ""}
+        ${rolling6Path ? `<path class="line rolling-6" d="${rolling6Path}" stroke="#ca8a04"></path>` : ""}
         ${points}
       `);
     }
@@ -1564,13 +1577,16 @@
         };
       });
       const values = growth.map(row => row.growth);
-      const rollingValues = rollingAverage(growth, "growth", 3);
-      const rolling = rollingValues.map((value, index) => ({ month: growth[index].month, growth: value }));
-      const allValues = [...values, ...rollingValues].filter(value => value !== null && Number.isFinite(value));
+      const rolling3Values = rollingAverage(growth, "growth", 3);
+      const rolling6Values = rollingAverage(growth, "growth", 6);
+      const rolling3 = rolling3Values.map((value, index) => ({ month: growth[index].month, growth: value }));
+      const rolling6 = rolling6Values.map((value, index) => ({ month: growth[index].month, growth: value }));
+      const allValues = [...values, ...rolling3Values, ...rolling6Values].filter(value => value !== null && Number.isFinite(value));
       const scale = svgScales(width, height, allValues);
       const zeroY = scale.y(0);
       const mainPath = pathFrom(growth, "growth", scale);
-      const rollingPath = pathFrom(rolling, "growth", scale);
+      const rolling3Path = pathFrom(rolling3, "growth", scale);
+      const rolling6Path = pathFrom(rolling6, "growth", scale);
       const points = growth.map((point, index) => {
         const value = point.growth;
         if (value === null || !Number.isFinite(value)) return "";
@@ -1584,13 +1600,15 @@
       }).join("");
 
       els.growthLegend.innerHTML = `<span><i class="swatch" style="background:#2563eb"></i>Monthly revenue growth</span>
-        <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>`;
+        <span><i class="swatch" style="background:#16a34a"></i>3-month rolling avg</span>
+        <span><i class="swatch" style="background:#ca8a04"></i>6-month rolling avg</span>`;
       els.growthChart.innerHTML = chartSvg(width, height, `
         ${grid(width, height, scale, value => `${value.toFixed(1)}%`)}
         <line class="gridline" x1="${scale.pad.left}" x2="${width - scale.pad.right}" y1="${zeroY}" y2="${zeroY}"></line>
         ${monthAxis(width, height, scale)}
         ${mainPath ? `<path class="line" d="${mainPath}" stroke="#2563eb"></path>` : ""}
-        ${rollingPath ? `<path class="line dashed" d="${rollingPath}" stroke="#16a34a"></path>` : ""}
+        ${rolling3Path ? `<path class="line dashed" d="${rolling3Path}" stroke="#16a34a"></path>` : ""}
+        ${rolling6Path ? `<path class="line rolling-6" d="${rolling6Path}" stroke="#ca8a04"></path>` : ""}
         ${points}
       `);
     }
