@@ -848,6 +848,8 @@
       compareAEnd: "",
       compareBStart: "",
       compareBEnd: "",
+      monthRangeTouched: false,
+      compareRangeTouched: false,
       sort: "month",
       sortDir: "asc",
       dark: false
@@ -1041,8 +1043,13 @@
     let shops = [];
 
     function loadDataSet(data) {
+      const previousLatestMonth = months[months.length - 1] || "";
+      const shouldAdvanceEndMonth = !state.monthRangeTouched && (!state.endMonth || state.endMonth === previousLatestMonth);
+      const shouldAdvanceCompareRange = !state.compareRangeTouched && (!state.compareAEnd || state.compareAEnd === previousLatestMonth);
+
       rows = hydrateRows(data);
       months = [...new Set(rows.map(row => row.month))].sort();
+      const latestMonth = months[months.length - 1] || "";
 
       const latestCallMonths = months.slice(-2);
       const shopsWithRecentCalls = new Set([...new Set(rows.map(row => row.shop))]
@@ -1056,17 +1063,17 @@
 
       state.selectedShops = state.selectedShops.filter(shop => shops.includes(shop));
       if (!months.includes(state.startMonth)) state.startMonth = months[0] || "";
-      if (!months.includes(state.endMonth)) state.endMonth = months[months.length - 1] || "";
+      if (shouldAdvanceEndMonth || !months.includes(state.endMonth)) state.endMonth = latestMonth;
       if (!shops.includes(state.compareShop)) state.compareShop = state.selectedShops.length === 1 ? state.selectedShops[0] : shops[0] || "";
       const recentRangeLength = Math.min(3, months.length);
       const defaultAStart = months[Math.max(0, months.length - recentRangeLength)] || "";
-      const defaultAEnd = months[months.length - 1] || "";
+      const defaultAEnd = latestMonth;
       const defaultBEndIndex = Math.max(0, months.length - recentRangeLength - 1);
       const defaultBStartIndex = Math.max(0, defaultBEndIndex - recentRangeLength + 1);
-      if (!months.includes(state.compareAStart)) state.compareAStart = defaultAStart;
-      if (!months.includes(state.compareAEnd)) state.compareAEnd = defaultAEnd;
-      if (!months.includes(state.compareBStart)) state.compareBStart = months[defaultBStartIndex] || defaultAStart;
-      if (!months.includes(state.compareBEnd)) state.compareBEnd = months[defaultBEndIndex] || defaultAEnd;
+      if (shouldAdvanceCompareRange || !months.includes(state.compareAStart)) state.compareAStart = defaultAStart;
+      if (shouldAdvanceCompareRange || !months.includes(state.compareAEnd)) state.compareAEnd = defaultAEnd;
+      if (shouldAdvanceCompareRange || !months.includes(state.compareBStart)) state.compareBStart = months[defaultBStartIndex] || defaultAStart;
+      if (shouldAdvanceCompareRange || !months.includes(state.compareBEnd)) state.compareBEnd = months[defaultBEndIndex] || defaultAEnd;
     }
 
     async function refreshFromSheet() {
@@ -1783,11 +1790,13 @@
     });
 
     els.startMonth.addEventListener("change", event => {
+      state.monthRangeTouched = true;
       state.startMonth = event.target.value;
       render();
     });
 
     els.endMonth.addEventListener("change", event => {
+      state.monthRangeTouched = true;
       state.endMonth = event.target.value;
       render();
     });
@@ -1804,6 +1813,7 @@
       [els.compareBEnd, "compareBEnd"]
     ].forEach(([select, key]) => {
       select.addEventListener("change", event => {
+        state.compareRangeTouched = true;
         state[key] = event.target.value;
         renderRangeCompare();
       });
