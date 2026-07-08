@@ -592,7 +592,7 @@
 
     table {
       width: 100%;
-      min-width: 980px;
+      min-width: 1160px;
       border-collapse: separate;
       border-spacing: 0;
     }
@@ -607,6 +607,7 @@
 
     th:last-child, td:last-child { border-right: 0; }
     th:first-child, td:first-child { text-align: left; }
+    th:nth-child(2), td:nth-child(2) { text-align: left; }
 
     th {
       position: sticky;
@@ -628,8 +629,28 @@
       background: var(--panel-2);
     }
 
-    td.tier-green, td.tier-yellow, td.tier-red {
+    td.heat-top-1, td.heat-top-2, td.heat-top-3 {
+      color: #14532d;
       font-weight: 850;
+    }
+
+    td.heat-top-1 { background: #bbf7d0; }
+    td.heat-top-2 { background: #dcfce7; }
+    td.heat-top-3 { background: #f0fdf4; }
+
+    [data-theme="dark"] td.heat-top-1 {
+      background: #1f5132;
+      color: #dcfce7;
+    }
+
+    [data-theme="dark"] td.heat-top-2 {
+      background: #1b3f2a;
+      color: #bbf7d0;
+    }
+
+    [data-theme="dark"] td.heat-top-3 {
+      background: #172f22;
+      color: #86efac;
     }
 
     .empty {
@@ -793,8 +814,10 @@
           <table>
             <thead>
               <tr>
+                <th data-sort="shop">Shop</th>
                 <th data-sort="month">Month</th>
                 <th data-sort="revenue">Revenue</th>
+                <th data-sort="appointments">Appointments</th>
                 <th data-sort="visits">Total Visits</th>
                 <th data-sort="avgRo">Average Revenue</th>
                 <th data-sort="calls">Calls</th>
@@ -1210,6 +1233,30 @@
         const source = sourceRows.filter(row => row.shop === shop && row.month === month);
         return { month, ...summarize(source) };
       });
+    }
+
+    function topRankMapByShop(data, key, limit = 3) {
+      const grouped = new Map();
+      for (const row of data) {
+        if (!grouped.has(row.shop)) grouped.set(row.shop, []);
+        grouped.get(row.shop).push(row);
+      }
+
+      const ranks = new Map();
+      for (const [shop, shopRows] of grouped) {
+        shopRows
+          .filter(row => row[key] > 0)
+          .sort((a, b) => b[key] - a[key] || a.month.localeCompare(b.month))
+          .slice(0, limit)
+          .forEach((row, index) => {
+            ranks.set(`${shop}|${row.month}`, index + 1);
+          });
+      }
+      return ranks;
+    }
+
+    function heatClass(rank) {
+      return rank ? ` class="heat-top-${rank}"` : "";
     }
 
     function rollingAverage(points, key, size = 3) {
@@ -1746,26 +1793,38 @@
     }
 
     function renderTable() {
-      const shopSet = new Set(selectedShopList());
-      const source = rows.filter(row => shopSet.has(row.shop));
-      const data = months.map(month => ({ month, ...summarize(source.filter(row => row.month === month)) }))
-        .filter(row => row.revenue || row.calls || row.newCustomers || row.returningCustomers || row.sentiment !== null);
+      const source = selectedRows();
+      const data = selectedShopList().flatMap(shop => selectedMonths().map(month => ({
+        shop,
+        month,
+        ...summarize(source.filter(row => row.shop === shop && row.month === month))
+      }))).filter(row =>
+        row.revenue || row.calls || row.visits || row.appointments || row.newCustomers || row.returningCustomers || row.sentiment !== null
+      );
+      const revenueRanks = topRankMapByShop(data, "revenue");
+      const appointmentRanks = topRankMapByShop(data, "appointments");
       data.sort((a, b) => {
         const dir = state.sortDir === "asc" ? 1 : -1;
-        if (state.sort === "month") return a.month.localeCompare(b.month) * dir;
-        return ((a[state.sort] || 0) - (b[state.sort] || 0)) * dir;
+        if (state.sort === "shop") return (a.shop.localeCompare(b.shop) || a.month.localeCompare(b.month)) * dir;
+        if (state.sort === "month") return (a.month.localeCompare(b.month) || a.shop.localeCompare(b.shop)) * dir;
+        return (((a[state.sort] || 0) - (b[state.sort] || 0)) || a.shop.localeCompare(b.shop) || a.month.localeCompare(b.month)) * dir;
       });
-      els.tableStatus.textContent = `${number.format(data.length)} months`;
-      els.scorecardRows.innerHTML = data.map(row => `<tr>
+      els.tableStatus.textContent = `${number.format(data.length)} shop months`;
+      els.scorecardRows.innerHTML = data.map(row => {
+        const rankKey = `${row.shop}|${row.month}`;
+        return `<tr data-shop="${esc(row.shop)}">
+        <td><strong>${esc(row.shop)}</strong></td>
         <td><strong>${esc(monthLabel(row.month))}</strong></td>
-        <td class="tier-${tier("revenue", row.revenue)}">${esc(formatValue("revenue", row.revenue))}</td>
-        <td class="tier-${tier("visits", row.visits)}">${esc(formatValue("visits", row.visits))}</td>
+        <td${heatClass(revenueRanks.get(rankKey))}>${esc(formatValue("revenue", row.revenue))}</td>
+        <td${heatClass(appointmentRanks.get(rankKey))}>${esc(formatValue("appointments", row.appointments))}</td>
+        <td>${esc(formatValue("visits", row.visits))}</td>
         <td>${esc(formatValue("avgRo", row.avgRo))}</td>
         <td>${esc(formatValue("calls", row.calls))}</td>
         <td>${esc(formatValue("sentiment", row.sentiment))}</td>
         <td>${esc(formatValue("newCustomers", row.newCustomers))}</td>
         <td>${esc(formatValue("returningCustomers", row.returningCustomers))}</td>
-      </tr>`).join("");
+      </tr>`;
+      }).join("");
     }
 
     function render() {
