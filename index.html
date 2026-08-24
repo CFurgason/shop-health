@@ -73,7 +73,7 @@
     }
 
     .filter-inner {
-      width: min(1440px, calc(100% - 28px));
+      width: min(1880px, calc(100% - 24px));
       margin: 0 auto;
       display: grid;
       grid-template-columns: minmax(210px, 0.9fr) minmax(280px, 1.4fr) repeat(2, minmax(145px, 0.65fr)) auto auto;
@@ -238,9 +238,9 @@
     }
 
     main {
-      width: min(1440px, calc(100% - 28px));
+      width: min(1880px, calc(100% - 24px));
       margin: 0 auto;
-      padding: 16px 0 34px;
+      padding: 14px 0 34px;
     }
 
     .scorecards {
@@ -258,8 +258,8 @@
     }
 
     .tile {
-      min-height: 134px;
-      padding: 13px;
+      min-height: 150px;
+      padding: 16px;
       display: grid;
       gap: 10px;
       align-content: center;
@@ -301,7 +301,7 @@
     .indicator.tier-red { background: var(--red); }
 
     .tile-value {
-      font-size: 26px;
+      font-size: 32px;
       font-weight: 850;
       line-height: 1.05;
       overflow-wrap: anywhere;
@@ -351,7 +351,7 @@
 
     .compare-body {
       display: grid;
-      gap: 14px;
+      gap: 16px;
       padding: 14px;
     }
 
@@ -537,13 +537,13 @@
     }
 
     .chart {
-      height: 330px;
-      padding: 12px;
+      height: 400px;
+      padding: 14px;
       overflow-x: auto;
       overflow-y: hidden;
     }
 
-    .chart.short { height: 300px; }
+    .chart.short { height: 360px; }
 
     svg {
       width: 100%;
@@ -714,7 +714,7 @@
       .compare-row { grid-template-columns: 1fr; gap: 8px; }
       .compare-row-delta { justify-self: start; }
       .compare-bar-line { grid-template-columns: 50px minmax(0, 1fr) minmax(60px, auto); }
-      .chart { height: 280px; }
+      .chart { height: 320px; }
     }
   </style>
 </head>
@@ -1525,8 +1525,9 @@
       };
     }
 
-    function chartWidth(min = 980, pxPerMonth = 76) {
-      return Math.max(min, 88 + selectedMonths().length * pxPerMonth);
+    function chartWidth(target, min = 980, pxPerMonth = 76) {
+      const visibleWidth = target?.clientWidth ? Math.max(0, target.clientWidth - 28) : 0;
+      return Math.max(min, visibleWidth, 88 + selectedMonths().length * pxPerMonth);
     }
 
     function chartSvg(width, height, content, attrs = 'role="img"') {
@@ -1565,8 +1566,8 @@
     }
 
     function renderLineChart(target, legendTarget, key, formatter, options = {}) {
-      const width = chartWidth(980, 76);
-      const height = options.height || 280;
+      const width = chartWidth(target, 980, 76);
+      const height = options.height || 340;
       const selected = selectedShopList();
       const series = selected.map(shop => ({ shop, points: byMonthShop(shop) }));
       const allValues = series.flatMap(item => [
@@ -1612,8 +1613,8 @@
     }
 
     function renderMetricTrend(target, legendTarget, title, key, formatter, options = {}) {
-      const width = chartWidth(980, 76);
-      const height = options.height || 280;
+      const width = chartWidth(target, 980, 76);
+      const height = options.height || 340;
       const data = byMonth(selectedRows());
       const values = data.map(row => row[key]);
       const rolling3Values = rollingAverage(data, key, 3);
@@ -1658,8 +1659,8 @@
     }
 
     function renderGrowthTrend() {
-      const width = chartWidth(980, 76);
-      const height = 260;
+      const width = chartWidth(els.growthChart, 980, 76);
+      const height = 320;
       const data = byMonth(selectedRows());
       const growth = data.map((row, index) => {
         if (index === 0) return { month: row.month, growth: null };
@@ -1759,8 +1760,8 @@
 
     function renderReviewsChart() {
       const data = byMonth(selectedRows());
-      const width = chartWidth(980, 124);
-      const height = 280;
+      const width = chartWidth(els.reviewsChart, 980, 124);
+      const height = 340;
       const pad = { left: 54, right: 18, top: 18, bottom: 50 };
       const max = Math.max(0, ...data.flatMap(row => reviewFields.map(field => row[field.key])));
       els.reviewsLegend.innerHTML = reviewFields.map(field => `<span><i class="swatch ${field.cls}"></i>${field.label}</span>`).join("");
@@ -1871,11 +1872,11 @@
         els.endMonth.value = state.endMonth;
       }
       renderScorecards();
-      renderMetricTrend(els.sentimentChart, els.sentimentLegend, "Sentiment score", "sentiment", value => value.toFixed(3), { height: 300, band: [0.75, 0.90] });
-      renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 260 });
+      renderMetricTrend(els.sentimentChart, els.sentimentLegend, "Sentiment score", "sentiment", value => value.toFixed(3), { height: 360, band: [0.75, 0.90] });
+      renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 320 });
       renderGrowthTrend();
-      renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 260 });
-      renderMetricTrend(els.appointmentsChart, els.appointmentsLegend, "Appointments", "appointments", value => number.format(value), { height: 260, emptyWhenZero: true });
+      renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 320 });
+      renderMetricTrend(els.appointmentsChart, els.appointmentsLegend, "Appointments", "appointments", value => number.format(value), { height: 320, emptyWhenZero: true });
       renderReviewsChart();
       renderRangeCompare();
       renderTable();
@@ -1886,6 +1887,12 @@
     render();
     refreshFromSheet();
     if (sheetCsvUrl()) setInterval(refreshFromSheet, GOOGLE_SHEET_REFRESH_MS);
+
+    let resizeRenderTimer = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeRenderTimer);
+      resizeRenderTimer = setTimeout(render, 120);
+    });
 
     els.dashboardViewButton.addEventListener("click", () => setView("dashboard"));
 
