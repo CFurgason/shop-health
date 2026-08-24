@@ -56,7 +56,7 @@
       background: var(--bg);
       color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1.45;
     }
 
@@ -73,25 +73,26 @@
     }
 
     .filter-inner {
-      width: min(1880px, calc(100% - 24px));
+      width: calc(100vw - 20px);
+      max-width: none;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: minmax(210px, 0.9fr) minmax(280px, 1.4fr) repeat(2, minmax(145px, 0.65fr)) auto auto;
-      gap: 10px;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(340px, 1.4fr) repeat(2, minmax(180px, 0.65fr)) auto auto;
+      gap: 12px;
       align-items: center;
       padding: 10px 0;
     }
 
     .brand h1 {
       margin: 0;
-      font-size: 22px;
+      font-size: 26px;
       letter-spacing: 0;
     }
 
     .brand p {
       margin: 2px 0 0;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
     }
 
     .view-tabs {
@@ -106,14 +107,14 @@
       width: max-content;
       max-width: 100%;
       flex: 0 0 auto;
-      height: 34px;
-      padding: 0 13px;
+      height: 38px;
+      padding: 0 16px;
       border: 1px solid var(--nav-border);
       border-radius: 8px;
       background: var(--panel);
       color: var(--ink);
       box-shadow: 0 1px 3px rgba(22, 33, 43, 0.06);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 850;
     }
 
@@ -156,7 +157,7 @@
       display: block;
       margin: 0 0 5px;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: 0;
       text-transform: uppercase;
@@ -172,13 +173,13 @@
     }
 
     .select {
-      height: 38px;
-      padding: 0 10px;
+      height: 42px;
+      padding: 0 12px;
     }
 
     .button {
-      height: 38px;
-      padding: 0 12px;
+      height: 42px;
+      padding: 0 14px;
       cursor: pointer;
       white-space: nowrap;
     }
@@ -222,7 +223,7 @@
       padding: 6px 5px;
       border-radius: 6px;
       color: var(--ink);
-      font-size: 13px;
+      font-size: 14px;
       text-transform: none;
       font-weight: 650;
     }
@@ -238,7 +239,8 @@
     }
 
     main {
-      width: min(1880px, calc(100% - 24px));
+      width: calc(100vw - 20px);
+      max-width: none;
       margin: 0 auto;
       padding: 14px 0 34px;
     }
@@ -246,8 +248,8 @@
     .scorecards {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: 16px;
+      margin-bottom: 16px;
     }
 
     .tile, .panel {
@@ -258,8 +260,8 @@
     }
 
     .tile {
-      min-height: 150px;
-      padding: 16px;
+      min-height: 168px;
+      padding: 18px;
       display: grid;
       gap: 10px;
       align-content: center;
@@ -277,7 +279,7 @@
 
     .tile-title {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 850;
       text-transform: uppercase;
     }
@@ -301,7 +303,7 @@
     .indicator.tier-red { background: var(--red); }
 
     .tile-value {
-      font-size: 32px;
+      font-size: 38px;
       font-weight: 850;
       line-height: 1.05;
       overflow-wrap: anywhere;
@@ -314,7 +316,7 @@
       gap: 5px;
       border-radius: 999px;
       padding: 4px 8px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 850;
     }
 
@@ -510,14 +512,14 @@
     .chart-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+      gap: 16px;
     }
 
     .panel.full { grid-column: 1 / -1; }
 
     .panel-head {
-      min-height: 48px;
-      padding: 12px 14px;
+      min-height: 54px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--line);
       display: flex;
       align-items: center;
@@ -527,23 +529,23 @@
 
     h2 {
       margin: 0;
-      font-size: 16px;
+      font-size: 18px;
       letter-spacing: 0;
     }
 
     .subtle {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
     }
 
     .chart {
-      height: 400px;
-      padding: 14px;
+      height: 440px;
+      padding: 16px;
       overflow-x: auto;
       overflow-y: hidden;
     }
 
-    .chart.short { height: 360px; }
+    .chart.short { height: 400px; }
 
     svg {
       width: 100%;
@@ -556,10 +558,10 @@
     }
 
     .gridline { stroke: var(--grid); stroke-width: 1; }
-    .axis-label { fill: var(--muted); font-size: 11px; }
+    .axis-label { fill: var(--muted); font-size: 12px; }
     .value-label {
       fill: var(--ink);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 850;
       paint-order: stroke;
       stroke: var(--panel);
@@ -602,7 +604,7 @@
       gap: 8px 12px;
       align-items: center;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
     }
 
     .legend span {
@@ -1526,7 +1528,7 @@
     }
 
     function chartWidth(target, min = 980, pxPerMonth = 76) {
-      const visibleWidth = target?.clientWidth ? Math.max(0, target.clientWidth - 28) : 0;
+      const visibleWidth = target?.clientWidth ? Math.max(0, target.clientWidth - 32) : 0;
       return Math.max(min, visibleWidth, 88 + selectedMonths().length * pxPerMonth);
     }
 
@@ -1567,7 +1569,7 @@
 
     function renderLineChart(target, legendTarget, key, formatter, options = {}) {
       const width = chartWidth(target, 980, 76);
-      const height = options.height || 340;
+      const height = options.height || 380;
       const selected = selectedShopList();
       const series = selected.map(shop => ({ shop, points: byMonthShop(shop) }));
       const allValues = series.flatMap(item => [
@@ -1614,7 +1616,7 @@
 
     function renderMetricTrend(target, legendTarget, title, key, formatter, options = {}) {
       const width = chartWidth(target, 980, 76);
-      const height = options.height || 340;
+      const height = options.height || 380;
       const data = byMonth(selectedRows());
       const values = data.map(row => row[key]);
       const rolling3Values = rollingAverage(data, key, 3);
@@ -1660,7 +1662,7 @@
 
     function renderGrowthTrend() {
       const width = chartWidth(els.growthChart, 980, 76);
-      const height = 320;
+      const height = 360;
       const data = byMonth(selectedRows());
       const growth = data.map((row, index) => {
         if (index === 0) return { month: row.month, growth: null };
@@ -1761,7 +1763,7 @@
     function renderReviewsChart() {
       const data = byMonth(selectedRows());
       const width = chartWidth(els.reviewsChart, 980, 124);
-      const height = 340;
+      const height = 380;
       const pad = { left: 54, right: 18, top: 18, bottom: 50 };
       const max = Math.max(0, ...data.flatMap(row => reviewFields.map(field => row[field.key])));
       els.reviewsLegend.innerHTML = reviewFields.map(field => `<span><i class="swatch ${field.cls}"></i>${field.label}</span>`).join("");
@@ -1872,11 +1874,11 @@
         els.endMonth.value = state.endMonth;
       }
       renderScorecards();
-      renderMetricTrend(els.sentimentChart, els.sentimentLegend, "Sentiment score", "sentiment", value => value.toFixed(3), { height: 360, band: [0.75, 0.90] });
-      renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 320 });
+      renderMetricTrend(els.sentimentChart, els.sentimentLegend, "Sentiment score", "sentiment", value => value.toFixed(3), { height: 400, band: [0.75, 0.90] });
+      renderMetricTrend(els.visitsChart, els.visitsLegend, "BDC visits", "visits", value => number.format(value), { height: 360 });
       renderGrowthTrend();
-      renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 320 });
-      renderMetricTrend(els.appointmentsChart, els.appointmentsLegend, "Appointments", "appointments", value => number.format(value), { height: 320, emptyWhenZero: true });
+      renderMetricTrend(els.callsChart, els.callsLegend, "Call volume", "calls", value => number.format(value), { height: 360 });
+      renderMetricTrend(els.appointmentsChart, els.appointmentsLegend, "Appointments", "appointments", value => number.format(value), { height: 360, emptyWhenZero: true });
       renderReviewsChart();
       renderRangeCompare();
       renderTable();
