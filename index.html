@@ -1769,7 +1769,7 @@
 
     function renderReviewsChart() {
       const data = byMonth(selectedRows());
-      const width = chartWidth(els.reviewsChart, 980, 124);
+      const width = chartWidth(els.reviewsChart, 980, 280);
       const height = 380;
       const pad = { left: 54, right: 18, top: 18, bottom: 50 };
       const max = Math.max(0, ...data.flatMap(row => reviewFields.map(field => row[field.key])));
@@ -1785,9 +1785,8 @@
       const y = value => height - pad.bottom - (value / max) * (height - pad.top - pad.bottom);
       const groupWidth = (width - pad.left - pad.right) / Math.max(1, data.length);
       const groupPadding = Math.max(10, Math.min(18, groupWidth * 0.14));
-      const gap = Math.max(6, Math.min(10, groupWidth / 18));
-      const baseBarWidth = Math.max(6, Math.min(16, (groupWidth - groupPadding * 2 - gap * (reviewFields.length - 1)) / reviewFields.length));
-      const barWidth = baseBarWidth * 2;
+      const gap = Math.max(10, Math.min(14, groupWidth / 20));
+      const barWidth = Math.max(12, Math.min(32, (groupWidth - groupPadding * 2 - gap * (reviewFields.length - 1)) / reviewFields.length));
       const shortLabel = month => {
         const [year, monthNumber] = month.split("-").map(Number);
         const date = new Date(year, monthNumber - 1, 1);
