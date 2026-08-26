@@ -1785,7 +1785,7 @@
       const y = value => height - pad.bottom - (value / max) * (height - pad.top - pad.bottom);
       const groupWidth = (width - pad.left - pad.right) / Math.max(1, data.length);
       const groupPadding = Math.max(10, Math.min(18, groupWidth * 0.14));
-      const gap = Math.max(2, Math.min(4, groupWidth / 28));
+      const gap = Math.max(6, Math.min(10, groupWidth / 18));
       const baseBarWidth = Math.max(6, Math.min(16, (groupWidth - groupPadding * 2 - gap * (reviewFields.length - 1)) / reviewFields.length));
       const barWidth = baseBarWidth * 2;
       const shortLabel = month => {
